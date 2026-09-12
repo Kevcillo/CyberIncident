@@ -1,0 +1,46 @@
+[
+    {
+        "id": "INC-001",
+        "titulo": "INC-001 - Correo sospechoso",
+        "tipo": "Phishing",
+        "prioridad": "Alta",
+        "estado": "En investigación",
+        "fecha": "2026-09-05",
+        "reportadoPor": "Usuario del sistema",
+        "responsable": "Equipo de Seguridad",
+        "descripcion": "Se recibió un correo electrónico sospechoso que solicita verificar las credenciales de acceso a un servicio interno."
+    },
+    {
+        "id": "INC-002",
+        "titulo": "INC-002 - Acceso no autorizado",
+        "tipo": "Intrusión",
+        "prioridad": "Crítica",
+        "estado": "Abierto",
+        "fecha": "2026-09-05",
+        "reportadoPor": "Administrador del sistema",
+        "responsable": "Equipo de Seguridad",
+        "descripcion": "Se detectó un intento de acceso no autorizado a un recurso interno de la organización."
+    },
+    {
+        "id": "INC-003",
+        "titulo": "INC-003 - Equipo infectado",
+        "tipo": "Malware",
+        "prioridad": "Alta",
+        "estado": "Abierto",
+        "fecha": "2026-09-04",
+        "reportadoPor": "Soporte técnico",
+        "responsable": "Equipo de Seguridad",
+        "descripcion": "Se identificó actividad sospechosa en un equipo y se inició el proceso de contención del incidente."
+    },
+    {
+        "id": "INC-004",
+        "titulo": "INC-004 - Credenciales expuestas",
+        "tipo": "Fuga de información",
+        "prioridad": "Media",
+        "estado": "Cerrado",
+        "fecha": "2026-09-03",
+        "reportadoPor": "Usuario del sistema",
+        "responsable": "Equipo de Seguridad",
+        "descripcion": "Se detectó la posible exposición de credenciales y se realizaron acciones para proteger las cuentas afectadas."
+    }
+]

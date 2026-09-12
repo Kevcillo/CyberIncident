@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CyberIncident - Gestión de Incidentes</title>
+    <!-- uso bootstrap y tailwindscss -->
+    <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+    crossorigin="anonymous"
+    >
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <link rel="stylesheet" href="css/estilos.css">
+
+</head>
+
+<body>
+
+    <!-- Región ARIA para anuncios dinámicos (lectores de pantalla) -->
+    <div id="anuncios-aria" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Encabezado principal -->
+    <header>
+        <div>
+            <h1>CyberIncident</h1>
+            <p>Plataforma de Gestión y Monitoreo de Incidentes de Ciberseguridad</p>
+        </div>
+
+        <div>
+            <p class="font-semibold tracking-wide">Panel de monitoreo</p>
+        </div>
+    </header>
+
+
+    <!-- Navegación principal -->
+    <nav aria-label="Navegación principal">
+        <button
+            type="button"
+            class="menu-toggle"
+            aria-expanded="false"
+            aria-controls="menu-principal"
+        >
+            <span class="menu-icon" aria-hidden="true">&#9776;</span>
+            <span>Menú</span>
+        </button>
+
+        <ul id="menu-principal">
+            <li><a href="#inicio">Inicio</a></li>
+            <li><a href="#incidentes">Incidentes</a></li>
+            <li><a href="#registrar">Registrar incidente</a></li>
+            <li><a href="#resumen">Monitoreo</a></li>
+        </ul>
+    </nav>
+
+
+    <!-- Contenido principal -->
+    <main id="inicio">
+
+        <!-- Mensaje de estado de carga / error (Fetch API) -->
+        <div id="mensaje-carga" class="mensaje-estado cargando" role="status">
+            Cargando incidentes...
+        </div>
+
+        <!-- Resumen de incidentes -->
+        <section id="resumen" aria-labelledby="titulo-resumen">
+
+            <h2 id="titulo-resumen">Resumen de incidentes</h2>
+
+            <div>
+
+            <article>
+                <h3>Incidentes abiertos</h3>
+                <p id="contador-abiertos" aria-live="off">0</p>
+            </article>
+
+            <article>
+                <h3>En investigación</h3>
+                <p id="contador-investigacion" aria-live="off">0</p>
+            </article>
+
+            <article>
+                <h3>Prioridad crítica</h3>
+                <p id="contador-criticos" aria-live="off">0</p>
+            </article>
+
+            <article>
+                <h3>Incidentes cerrados</h3>
+                <p id="contador-cerrados" aria-live="off">0</p>
+            </article>
+
+            </div>
+
+        </section>
+
+
+        <!-- Lista de incidentes (se llena dinámicamente vía Fetch + DOM) -->
+        <section id="incidentes" aria-labelledby="titulo-incidentes">
+
+            <h2 id="titulo-incidentes">Listado de incidentes</h2>
+
+            <div id="lista-incidentes" aria-busy="true">
+                <!-- Las tarjetas de incidentes se generan dinámicamente en tiempo de ejecución -->
+            </div>
+
+        </section>
+
+
+        <!-- Detalle del incidente -->
+        <section id="detalle" aria-labelledby="titulo-detalle">
+
+            <h2 id="titulo-detalle">Detalle del incidente</h2>
+
+            <article id="detalle-contenido" aria-live="polite">
+                <p>Seleccione un incidente del listado para ver su detalle.</p>
+            </article>
+
+        </section>
+
+
+        <!-- Formulario de registro -->
+        <section id="registrar" aria-labelledby="titulo-registro">
+
+            <h2 id="titulo-registro">Registrar nuevo incidente</h2>
+
+            <p id="ayuda-formulario">
+                Complete todos los campos obligatorios para registrar un nuevo
+                incidente de ciberseguridad.
+            </p>
+
+
+            <form id="form-incidente" novalidate>
+
+                <!-- Título -->
+                <div>
+                    <label for="titulo">Título del incidente</label>
+
+                    <input
+                        type="text"
+                        id="titulo"
+                        name="titulo"
+                        required
+                        minlength="5"
+                        maxlength="100"
+                        aria-describedby="ayuda-titulo error-titulo"
+                        aria-invalid="false"
+                    >
+
+                    <small id="ayuda-titulo">
+                        Escriba un título breve y descriptivo,
+                        entre 5 y 100 caracteres.
+                    </small>
+                    <span id="error-titulo" class="error-campo" role="alert"></span>
+                </div>
+
+
+                <!-- Tipo -->
+                <div>
+                    <label for="tipo">Tipo de incidente</label>
+
+                    <select
+                        id="tipo"
+                        name="tipo"
+                        required
+                        aria-describedby="ayuda-tipo error-tipo"
+                        aria-invalid="false"
+                    >
+                        <option value="">Seleccione un tipo</option>
+                        <option value="Phishing">Phishing</option>
+                        <option value="Malware">Malware</option>
+                        <option value="Intrusión">Intrusión</option>
+                        <option value="Fuga de información">Fuga de información</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+
+                    <small id="ayuda-tipo">
+                        Seleccione la categoría que mejor describa el incidente.
+                    </small>
+                    <span id="error-tipo" class="error-campo" role="alert"></span>
+                </div>
+
+
+                <!-- Prioridad -->
+                <fieldset aria-describedby="error-prioridad">
+
+                    <legend>Prioridad del incidente</legend>
+
+                    <div>
+                        <input
+                            type="radio"
+                            id="prioridad-baja"
+                            name="prioridad"
+                            value="Baja"
+                            required
+                        >
+                        <label for="prioridad-baja">Baja</label>
+                    </div>
+
+                    <div>
+                        <input
+                            type="radio"
+                            id="prioridad-media"
+                            name="prioridad"
+                            value="Media"
+                        >
+                        <label for="prioridad-media">Media</label>
+                    </div>
+
+                    <div>
+                        <input
+                            type="radio"
+                            id="prioridad-alta"
+                            name="prioridad"
+                            value="Alta"
+                        >
+                        <label for="prioridad-alta">Alta</label>
+                    </div>
+
+                    <div>
+                        <input
+                            type="radio"
+                            id="prioridad-critica"
+                            name="prioridad"
+                            value="Crítica"
+                        >
+                        <label for="prioridad-critica">Crítica</label>
+                    </div>
+
+                    <span id="error-prioridad" class="error-campo" role="alert"></span>
+
+                </fieldset>
+
+
+                <!-- Correo -->
+                <div>
+                    <label for="correo">Correo del reportante</label>
+
+                    <input
+                        type="email"
+                        id="correo"
+                        name="correo"
+                        required
+                        aria-describedby="ayuda-correo error-correo"
+                        aria-invalid="false"
+                    >
+
+                    <small id="ayuda-correo">
+                        Introduzca un correo electrónico válido
+                        para identificar al reportante.
+                    </small>
+                    <span id="error-correo" class="error-campo" role="alert"></span>
+                </div>
+
+
+                <!-- Fecha -->
+                <div>
+                    <label for="fecha">Fecha del incidente</label>
+
+                    <input
+                        type="date"
+                        id="fecha"
+                        name="fecha"
+                        required
+                        aria-describedby="ayuda-fecha error-fecha"
+                        aria-invalid="false"
+                    >
+
+                    <small id="ayuda-fecha">
+                        Seleccione la fecha en la que ocurrió
+                        o fue detectado el incidente.
+                    </small>
+                    <span id="error-fecha" class="error-campo" role="alert"></span>
+                </div>
+
+
+                <!-- Descripción -->
+                <div>
+                    <label for="descripcion">Descripción del incidente</label>
+
+                    <textarea
+                        id="descripcion"
+                        name="descripcion"
+                        rows="6"
+                        minlength="20"
+                        maxlength="500"
+                        required
+                        aria-describedby="ayuda-descripcion error-descripcion"
+                        aria-invalid="false"
+                    ></textarea>
+
+                    <small id="ayuda-descripcion">
+                        Describa brevemente qué ocurrió.
+                        Utilice entre 20 y 500 caracteres.
+                    </small>
+                    <span id="error-descripcion" class="error-campo" role="alert"></span>
+                </div>
+
+
+                <!-- Botón -->
+                <button type="submit">
+                    Registrar incidente
+                </button>
+
+            </form>
+
+            <div
+                id="mensaje-registro"
+                class="mensaje-estado exito"
+                role="status"
+                aria-live="polite"
+                hidden
+            ></div>
+
+        </section>
+
+
+        <!-- Información adicional -->
+        <aside class="shadow-sm" aria-labelledby="titulo-informacion">
+
+            <h2 id="titulo-informacion" class="font-bold tracking-wide"
+            >Información del sistema</h2>
+
+            <p>
+                CyberIncident permite registrar, consultar y monitorear
+                incidentes de seguridad de forma organizada. Los incidentes base
+                se cargan desde un archivo JSON (modelo de solo lectura) y los
+                incidentes registrados en el formulario se agregan de forma
+                temporal en memoria durante la sesión.
+            </p>
+
+            <h3 class="font-semibold">Recomendación</h3>
+
+            <p>
+                Mantenga actualizada la información de cada incidente
+                para facilitar su seguimiento y resolución.
+            </p>
+
+        </aside>
+
+    </main>
+
+
+    <!-- Pie de página -->
+    <footer>
+
+        <p>
+            CyberIncident - Proyecto académico de Desarrollo Web
+        </p>
+
+        <p>
+            Plataforma demostrativa para la gestión de incidentes
+            de ciberseguridad. Unidad 2: JavaScript moderno, DOM, Fetch API,
+            ARIA, jQuery y arquitectura MVC.
+        </p>
+
+    </footer>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <!-- Módulos de la aplicación (arquitectura MVC) -->
+    <script type="module" src="js/app.js"></script>
+
+</body>
+
+</html>
