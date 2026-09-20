@@ -36,7 +36,7 @@ $(function () {
         }
     });
 
-    const modelo = new IncidentModel("/api/incidentes");
+    const modelo = new IncidentModel("/data/incidentes.json");
     const vista = new IncidentView();
     const controlador = new IncidentController(modelo, vista);
 
