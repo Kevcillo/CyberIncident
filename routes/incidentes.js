@@ -1,14 +1,16 @@
-// rutas de la api de incidentes
+/**
+ * RUTAS (mapea metodo HTTP + URL -> funcion del controlador)
+ */
 
 const express = require("express");
-const controlador = require("../controllers/incidentesController");
+const controlador = require("../js/controllers/incidentesController");
 
 const router = express.Router();
 
+// GET /api/incidentes -> lista completa (JSON)
 router.get("/", controlador.listarIncidentes);
+
+// GET /api/incidentes/:id -> un incidente puntual (JSON)
 router.get("/:id", controlador.obtenerIncidente);
-router.post("/", controlador.crearIncidente);
-router.put("/:id", controlador.actualizarIncidente);
-router.delete("/:id", controlador.eliminarIncidente);
 
 module.exports = router;
