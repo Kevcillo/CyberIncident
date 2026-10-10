@@ -227,6 +227,59 @@ nav a:focus {
 #incidentes article button:focus {
     background-color: #1e3a8a;
 }
+
+/* filtros */
+
+#form-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 16px;
+    margin-bottom: 16px;
+    padding: 20px;
+    background-color: white;
+    border: 1px solid #dbe2e8;
+    border-radius: 8px;
+}
+
+#form-filtros > div {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 180px;
+}
+
+#form-filtros label {
+    font-weight: bold;
+    color: #1e293b;
+}
+
+#form-filtros select {
+    padding: 9px 12px;
+    border: 1px solid #94a3b8;
+    border-radius: 6px;
+    background-color: white;
+}
+
+#form-filtros button {
+    padding: 10px 16px;
+    background-color: white;
+    color: #172554;
+    border: 1px solid #172554;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+#form-filtros select:focus,
+#form-filtros button:focus {
+    outline: 3px solid #93c5fd;
+    outline-offset: 2px;
+}
+
+#total-filtrado {
+    margin-bottom: 16px;
+    color: #475569;
+}
 /* DETALLE DEL INCIDENTE */
 
 #detalle {

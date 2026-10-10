@@ -1,0 +1,296 @@
+{
+  "info": {
+    "name": "CyberIncident API",
+    "description": "Peticiones de la API de incidentes. Ejecutar en orden con el servidor encendido. El incidente de prueba se crea y se elimina dentro de la colección.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "idCreado", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Casos correctos",
+      "item": [
+        {
+          "name": "01 Estado del servicio",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/estado" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('el servicio está activo', () => pm.expect(pm.response.json().estado).to.eql('activo'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Listar todos los incidentes",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/incidentes" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('devuelve una lista', () => pm.expect(pm.response.json().datos).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Filtrar por estado y prioridad",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/incidentes?estado=Abierto&prioridad=Alta" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('todos cumplen el filtro', () => {",
+                  "    pm.response.json().datos.forEach((i) => {",
+                  "        pm.expect(i.estado).to.eql('Abierto');",
+                  "        pm.expect(i.prioridad).to.eql('Alta');",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Crear incidente",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Ransomware en servidor\",\n  \"tipo\": \"Malware\",\n  \"prioridad\": \"Crítica\",\n  \"fecha\": \"2026-10-02\",\n  \"reportadoPor\": \"soporte@empresa.com\",\n  \"descripcion\": \"Archivos cifrados en el servidor de archivos principal.\"\n}"
+            },
+            "url": "{{baseUrl}}/api/incidentes"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', () => pm.response.to.have.status(201));",
+                  "pm.test('se crea abierto', () => pm.expect(pm.response.json().datos.estado).to.eql('Abierto'));",
+                  "pm.collectionVariables.set('idCreado', pm.response.json().datos.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 Obtener el incidente creado",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/incidentes/{{idCreado}}" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('es el incidente creado', () => pm.expect(pm.response.json().datos.titulo).to.eql('Ransomware en servidor'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 Actualizar estado del incidente",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"estado\": \"En investigación\"\n}" },
+            "url": "{{baseUrl}}/api/incidentes/{{idCreado}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('el estado cambió', () => pm.expect(pm.response.json().datos.estado).to.eql('En investigación'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07 Eliminar el incidente creado",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/incidentes/{{idCreado}}" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Casos de error",
+      "item": [
+        {
+          "name": "08 Obtener el incidente eliminado",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/incidentes/{{idCreado}}" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09 Crear con datos inválidos",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Ab\",\n  \"tipo\": \"Virus\",\n  \"prioridad\": \"Urgente\",\n  \"fecha\": \"2026-13-45\",\n  \"reportadoPor\": \"correo-malo\",\n  \"descripcion\": \"corta\"\n}"
+            },
+            "url": "{{baseUrl}}/api/incidentes"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('indica el error de cada campo', () => {",
+                  "    const errores = pm.response.json().errores;",
+                  "    ['titulo', 'tipo', 'prioridad', 'fecha', 'reportadoPor', 'descripcion'].forEach((c) => pm.expect(errores).to.have.property(c));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10 Crear con JSON mal escrito",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{titulo: sin comillas" },
+            "url": "{{baseUrl}}/api/incidentes"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "11 Actualizar con estado inválido",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"estado\": \"Pendiente\"\n}" },
+            "url": "{{baseUrl}}/api/incidentes/1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('indica el error del estado', () => pm.expect(pm.response.json().errores).to.have.property('estado'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "12 Filtro con valor no permitido",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/incidentes?estado=Perdido" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "13 Id que no es número",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/incidentes/abc" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14 Eliminar un id inexistente",
+          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/incidentes/999" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "15 Ruta inexistente",
+          "request": { "method": "GET", "url": "{{baseUrl}}/api/no-existe" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

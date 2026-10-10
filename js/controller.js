@@ -1,94 +1,144 @@
-/**
- * CONTROLADOR (C de MVC)
- * -----------------------------------------------------------------------
- * Conecta el Modelo con la Vista: escucha los eventos del usuario
- * (jQuery), aplica las reglas de validación dinámica del formulario y
- * decide qué debe pintarse en cada momento.
- */
+// controlador, une el modelo con la vista y atiende los eventos
 
 export class IncidentController {
 
     constructor(model, view) {
+
         this.model = model;
         this.view = view;
 
         this.$formulario = $("#form-incidente");
+        this.$filtros = $("#form-filtros");
 
-        // Reglas de validación por campo (además de los atributos HTML5)
+        // cada regla devuelve true o el mensaje de error
         this.reglas = {
+
             titulo: (valor) =>
-                valor.trim().length >= 5 || "El título debe tener al menos 5 caracteres.",
+                valor.trim().length >= 5 ||
+                "El título debe tener al menos 5 caracteres.",
+
             tipo: (valor) =>
-                valor !== "" || "Debe seleccionar un tipo de incidente.",
+                valor !== "" ||
+                "Debe seleccionar un tipo de incidente.",
+
             correo: (valor) =>
-                /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor) || "Ingrese un correo electrónico válido.",
+                /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor.trim()) ||
+                "Ingrese un correo electrónico válido.",
+
             fecha: (valor) =>
-                valor !== "" || "Debe seleccionar una fecha.",
+                valor !== "" ||
+                "Debe seleccionar una fecha.",
+
             descripcion: (valor) =>
-                valor.trim().length >= 20 || "La descripción debe tener al menos 20 caracteres.",
+                valor.trim().length >= 20 ||
+                "La descripción debe tener al menos 20 caracteres.",
         };
 
         this.bindEventos();
     }
 
-    /** Carga inicial de datos (Fetch API) y primer renderizado. */
     async iniciar() {
+        await this.actualizarPantalla();
+    }
+
+    leerFiltros() {
+        return {
+            tipo: $("#filtro-tipo").val(),
+            prioridad: $("#filtro-prioridad").val(),
+            estado: $("#filtro-estado").val(),
+        };
+    }
+
+    // vuelve a pedir la lista filtrada y el resumen
+    async actualizarPantalla() {
 
         this.view.mostrarCargando();
 
         try {
-            const datos = await this.model.cargarDatos();
 
-            this.view.renderLista(this.model.obtenerTodos());
-            this.view.renderResumen(this.model.calcularResumen());
+            const [incidentes, resumen] = await Promise.all([
+                this.model.listar(this.leerFiltros()),
+                this.model.calcularResumen(),
+            ]);
+
+            this.view.renderLista(incidentes);
+            this.view.renderResumen(resumen);
             this.view.ocultarMensajeCarga();
 
-            this.view.anunciar(`Se cargaron ${datos.length} incidentes correctamente.`);
+            this.view.anunciar(`Se cargaron ${incidentes.length} incidentes.`);
 
         } catch (error) {
+
             console.error(error);
+
             this.view.mostrarError(
                 "No se pudieron cargar los incidentes desde el servidor. Intente nuevamente."
             );
         }
     }
 
-    /** Registra los manejadores de eventos (delegados con jQuery). */
     bindEventos() {
 
-        // Ver detalle de un incidente
-        $("#lista-incidentes").on("click", "button[data-incidente]", (evento) => {
-            const id = $(evento.currentTarget).data("incidente");
-            const incidente = this.model.obtenerPorId(id);
+        // ver detalle
+        $("#lista-incidentes").on(
+            "click",
+            "button[data-incidente]",
+            async (evento) => {
 
-            if (!incidente) return;
+                const id = $(evento.currentTarget).data("incidente");
 
-            this.view.renderDetalle(incidente);
-            this.view.anunciar(`Mostrando detalle de ${incidente.titulo}`);
+                try {
+
+                    const incidente = await this.model.obtenerPorId(id);
+
+                    this.view.renderDetalle(incidente);
+                    this.view.anunciar(`Mostrando detalle de ${incidente.codigo}`);
+
+                } catch (error) {
+
+                    this.view.mostrarError(error.message);
+                }
+            }
+        );
+
+        // filtros
+        this.$filtros.on("change", "select", () => this.actualizarPantalla());
+
+        this.$filtros.on("reset", () => {
+            // el reset limpia los campos después del evento
+            setTimeout(() => this.actualizarPantalla(), 0);
         });
 
-        // Validación dinámica: se valida cada campo mientras el usuario escribe
+        this.$filtros.on("submit", (evento) => evento.preventDefault());
+
+        // validación mientras se escribe
         this.$formulario
             .find("input, select, textarea")
             .not("[type=radio]")
-            .on("input blur change", (evento) => this.validarCampo(evento.target.id));
+            .on(
+                "input blur change",
+                (evento) => this.validarCampo(evento.target.id)
+            );
 
-        this.$formulario.find("[name=prioridad]").on("change", () =>
-            this.validarPrioridad()
+        this.$formulario
+            .find("[name=prioridad]")
+            .on("change", () => this.validarPrioridad());
+
+        this.$formulario.on(
+            "submit",
+            (evento) => this.registrarIncidente(evento)
         );
-
-        // Envío del formulario
-        this.$formulario.on("submit", (evento) => this.registrarIncidente(evento));
     }
 
-    /** Valida un campo individual según las reglas definidas arriba. */
     validarCampo(idCampo) {
 
         const regla = this.reglas[idCampo];
-        if (!regla) return true;
 
-        const valor = document.getElementById(idCampo).value;
-        const resultado = regla(valor);
+        if (!regla) {
+            return true;
+        }
+
+        const resultado = regla(document.getElementById(idCampo).value);
 
         if (resultado === true) {
             this.view.marcarCampoValido(idCampo);
@@ -96,23 +146,22 @@ export class IncidentController {
         }
 
         this.view.marcarCampoInvalido(idCampo, resultado);
+
         return false;
     }
 
-    /** Valida el grupo de radios de prioridad (obligatorio). */
     validarPrioridad() {
-        const seleccionado = $("input[name=prioridad]:checked").length > 0;
 
-        if (seleccionado) {
+        if ($("input[name=prioridad]:checked").length > 0) {
             this.view.marcarCampoValido("prioridad");
             return true;
         }
 
         this.view.marcarCampoInvalido("prioridad", "Debe seleccionar una prioridad.");
+
         return false;
     }
 
-    /** Lleva el foco al primer campo marcado como inválido (accesibilidad). */
     enfocarPrimerCampoInvalido(camposAValidar) {
 
         const primerInvalido = camposAValidar.find(
@@ -124,28 +173,43 @@ export class IncidentController {
             return;
         }
 
-        // Si el único error es la prioridad (no tiene un único input con id),
-        // se enfoca el primer radio del grupo.
         if (document.getElementById("prioridad").getAttribute("aria-invalid") === "true") {
             document.getElementById("prioridad-baja").focus();
         }
     }
 
-    /** Maneja el envío del formulario: valida, registra y actualiza la vista. */
-    registrarIncidente(evento) {
+    // muestra en cada campo los errores que devuelve el servidor
+    mostrarErroresServidor(errores) {
+
+        // en la api el correo se llama reportadoPor
+        const equivalencias = { reportadoPor: "correo" };
+
+        Object.entries(errores).forEach(([nombre, mensaje]) => {
+            const campo = equivalencias[nombre] || nombre;
+
+            if (document.getElementById(campo)) {
+                this.view.marcarCampoInvalido(campo, mensaje);
+            }
+        });
+
+        this.enfocarPrimerCampoInvalido(Object.keys(this.reglas));
+    }
+
+    async registrarIncidente(evento) {
 
         evento.preventDefault();
 
-        const camposAValidar = ["titulo", "tipo", "correo", "fecha", "descripcion"];
+        this.view.ocultarMensajeRegistro();
 
+        const camposAValidar = Object.keys(this.reglas);
         const resultados = camposAValidar.map((id) => this.validarCampo(id));
         const prioridadValida = this.validarPrioridad();
 
-        const formularioValido = resultados.every(Boolean) && prioridadValida;
+        if (!resultados.every(Boolean) || !prioridadValida) {
 
-        if (!formularioValido) {
             this.view.anunciar("El formulario contiene errores. Revise los campos marcados.");
             this.enfocarPrimerCampoInvalido(camposAValidar);
+
             return;
         }
 
@@ -153,18 +217,35 @@ export class IncidentController {
             titulo: $("#titulo").val().trim(),
             tipo: $("#tipo").val(),
             prioridad: $("input[name=prioridad]:checked").val(),
-            correo: $("#correo").val().trim(),
+            reportadoPor: $("#correo").val().trim(),
             fecha: $("#fecha").val(),
             descripcion: $("#descripcion").val().trim(),
         };
 
-        const nuevoIncidente = this.model.agregarIncidenteLocal(datosIncidente);
+        const $boton = this.$formulario.find("button[type=submit]");
+        $boton.prop("disabled", true);
 
-        this.view.renderLista(this.model.obtenerTodos());
-        this.view.renderResumen(this.model.calcularResumen());
-        this.view.limpiarFormulario(this.$formulario);
-        this.view.mostrarRegistroExitoso();
+        try {
 
-        this.view.anunciar(`El incidente ${nuevoIncidente.id} fue registrado correctamente.`);
+            const nuevo = await this.model.crear(datosIncidente);
+
+            this.view.limpiarFormulario(this.$formulario);
+            this.view.mostrarRegistroExitoso(nuevo.codigo);
+            this.view.anunciar(`El incidente ${nuevo.codigo} fue registrado correctamente.`);
+
+            await this.actualizarPantalla();
+
+        } catch (error) {
+
+            console.error(error);
+
+            this.mostrarErroresServidor(error.errores || {});
+            this.view.mostrarErrorRegistro(`No se pudo registrar el incidente. ${error.message}`);
+            this.view.anunciar("No se pudo registrar el incidente.");
+
+        } finally {
+
+            $boton.prop("disabled", false);
+        }
     }
 }
