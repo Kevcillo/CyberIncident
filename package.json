@@ -1,10 +1,9 @@
 {
-  "name": "cyberincident-n3-prototipo",
+  "name": "t1s3",
   "version": "1.0.0",
-  "description": "Prototipo minimo cliente-servidor (Unidad 3) - plataforma digital CyberIncident",
-  "main": "server.js",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -14,11 +13,11 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/Kevcillo/CyberIncident/issues"
   },
   "homepage": "https://github.com/Kevcillo/CyberIncident#readme",
-  "type": "commonjs",
   "dependencies": {
     "express": "^5.2.1"
   }

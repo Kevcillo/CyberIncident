@@ -1,65 +1,36 @@
-/**
- * SERVIDOR NODE.JS (Express)
- * -------------------------------------------------------------------
- * Punto de entrada de la plataforma digital.
- *
- * - Sirve la capa de PRESENTACIÓN como archivos estáticos
- *   desde la carpeta raíz del proyecto.
- * - Expone la capa de APLICACIÓN mediante rutas HTTP bajo /api.
- * - La capa de DATOS queda oculta detrás del repositorio.
- */
-
-const express = require("express");
-const path = require("path");
-
-const rutasIncidentes = require("./routes/incidentes");
+const express = require('express');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
-const PUERTO = process.env.PORT || 3000;
+const PORT = 3000;
 
-// Permite recibir información en formato JSON
-app.use(express.json());
+// 1 Capa de Servicios y def la ruta API HTTP
+app.get('/api/incidentes', (req, res) => {
+    
+    // Apuntamos a tu archivo JSON simulando la Base de Datos
+    const dataPath = path.join(__dirname, 'data', 'incidentes.json');
 
-// -------------------------------------------------------------------
-// Capa de PRESENTACIÓN
-// -------------------------------------------------------------------
-// Se mantiene la estructura anterior:
-// index.html, CSS, JS y demás archivos están en la raíz del proyecto.
-app.use(express.static(__dirname));
-
-// -------------------------------------------------------------------
-// Capa de APLICACIÓN
-// -------------------------------------------------------------------
-// Las peticiones a /api/incidentes son gestionadas por las rutas
-// correspondientes.
-app.use("/api/incidentes", rutasIncidentes);
-
-// -------------------------------------------------------------------
-// Ruta de verificación rápida del servicio (Health Check)
-// -------------------------------------------------------------------
-app.get("/api/estado", (req, res) => {
-
-    res.status(200).json({
-        servicio: "CyberIncident API",
-        estado: "activo",
-        fecha: new Date().toISOString(),
+    fs.readFile(dataPath, 'utf8', (err, data) => {
+        if (err) {
+            console.error("Error al leer el archivo:", err);
+            return res.status(500).json({ error: 'Error interno del servidor' });
+        }
+        // Código 2h
+        res.status(200).json(JSON.parse(data));
     });
 });
 
-// -------------------------------------------------------------------
-// Iniciar servidor
-// -------------------------------------------------------------------
-app.listen(PUERTO, () => {
+// 2. Ruta de salud 
+app.get('/salud', (req, res) => {
+    res.json({ estado: 'ok' });
+});
 
-    console.log(
-        `Servidor CyberIncident escuchando en http://localhost:${PUERTO}`
-    );
+// 3. Capa de Presentació  
+app.use(express.static(__dirname));
 
-    console.log(
-        `API de incidentes disponible en http://localhost:${PUERTO}/api/incidentes`
-    );
-
-    console.log(
-        `Health check disponible en http://localhost:${PUERTO}/api/estado`
-    );
+// Iniciar el servidor
+app.listen(PORT, () => {
+    console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
+    console.log(`Revisa la API en http://localhost:${PORT}/api/incidentes`);
 });
