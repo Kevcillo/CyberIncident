@@ -1,38 +1,20 @@
-// modelo del navegador, se comunica con la api usando fetch y el token de la sesión
+// modelo del navegador, se comunica con la api usando fetch
 
 export class IncidentModel {
 
-    constructor(urlApi, sesion) {
+    constructor(urlApi) {
         this.urlApi = urlApi;
-        this.sesion = sesion;
         this.incidentes = [];
-
-        // el controlador decide qué hacer cuando la sesión deja de ser válida
-        this.alPerderSesion = () => {};
     }
 
-    // hace la petición con el token y devuelve la respuesta json o lanza un error
+    // hace la petición y devuelve la respuesta json o lanza un error
     async peticion(url, opciones = {}) {
-        const cabeceras = { ...(opciones.headers || {}) };
-
-        if (this.sesion.token) {
-            cabeceras.Authorization = `Bearer ${this.sesion.token}`;
-        }
-
-        const respuesta = await fetch(url, { ...opciones, headers: cabeceras });
+        const respuesta = await fetch(url, opciones);
         const cuerpo = await respuesta.json().catch(() => ({}));
 
         if (!respuesta.ok) {
             const error = new Error(cuerpo.mensaje || `Error HTTP ${respuesta.status}`);
-            error.estado = respuesta.status;
             error.errores = cuerpo.errores || {};
-
-            // token vencido o inválido, hay que volver a iniciar sesión
-            if (respuesta.status === 401) {
-                this.sesion.cerrar();
-                this.alPerderSesion(error.message);
-            }
-
             throw error;
         }
 
@@ -68,25 +50,6 @@ export class IncidentModel {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(datosIncidente),
-        });
-
-        return datos;
-    }
-
-    // cambia solo los campos enviados
-    async actualizar(id, cambios) {
-        const { datos } = await this.peticion(`${this.urlApi}/${encodeURIComponent(id)}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(cambios),
-        });
-
-        return datos;
-    }
-
-    async eliminar(id) {
-        const { datos } = await this.peticion(`${this.urlApi}/${encodeURIComponent(id)}`, {
-            method: "DELETE",
         });
 
         return datos;

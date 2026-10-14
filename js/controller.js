@@ -1,10 +1,22 @@
-// controlador, une el modelo con la vista y atiende los eventos
+/**
+ * CONTROLADOR (C de MVC)
+ * -----------------------------------------------------------------------
+ * Conecta el Modelo con la Vista: escucha los eventos del usuario
+ * (jQuery), aplica las reglas de validación dinámica del formulario y
+ * decide qué debe pintarse en cada momento.
+ *
+ * CAPA DE LÓGICA DE NEGOCIO / APLICACIÓN
+ * -----------------------------------------------------------------------
+ * Recibe y procesa los datos provenientes del repositorio mediante
+ * las funciones listarIncidentes y obtenerIncidente.
+ * La información se maneja mediante objetos JSON.
+ */
 
-const CORREO_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const repositorio = require("../data/incidentesRepository");
 
 export class IncidentController {
 
-    constructor(model, view, sesion) {
+    constructor(model, view) {
 
         this.model = model;
         this.view = view;
@@ -12,12 +24,8 @@ export class IncidentController {
 
         this.$formulario = $("#form-incidente");
         this.$filtros = $("#form-filtros");
-        this.$acceso = $("#form-acceso");
 
-        // id del incidente que se está editando, null cuando se registra uno nuevo
-        this.editandoId = null;
-
-        // cada regla devuelve true o el mensaje de error
+        // Reglas de validación por campo
         this.reglas = {
 
             titulo: (valor) =>
@@ -29,7 +37,7 @@ export class IncidentController {
                 "Debe seleccionar un tipo de incidente.",
 
             correo: (valor) =>
-                CORREO_VALIDO.test(valor.trim()) ||
+                /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor) ||
                 "Ingrese un correo electrónico válido.",
 
             fecha: (valor) =>
@@ -47,32 +55,11 @@ export class IncidentController {
         this.bindEventos();
     }
 
-    // al abrir la página se revisa si ya hay una sesión válida
+    /**
+     * Carga inicial de datos y primer renderizado.
+     */
     async iniciar() {
-        try {
-            if (await this.sesion.verificar()) {
-                await this.entrar();
-            } else {
-                this.view.mostrarAcceso();
-            }
-        } catch (error) {
-            console.error(error);
-            this.view.mostrarAcceso("No se pudo conectar con el servidor. Intente nuevamente.");
-        }
-    }
-
-    async entrar() {
-        this.editandoId = null;
-        this.view.mostrarPanel(this.sesion.usuario);
-        this.view.modoCreacion();
-        this.view.limpiarDetalle();
         await this.actualizarPantalla();
-    }
-
-    salir(mensaje, tipo = "error") {
-        this.sesion.cerrar();
-        this.editandoId = null;
-        this.view.mostrarAcceso(mensaje, tipo);
     }
 
     leerFiltros() {
@@ -90,23 +77,21 @@ export class IncidentController {
 
         try {
 
-            const [incidentes, resumen] = await Promise.all([
-                this.model.listar(this.leerFiltros()),
-                this.model.calcularResumen(),
-            ]);
+            const incidentes = repositorio.obtenerTodos();
 
             this.view.renderLista(incidentes);
-            this.view.renderResumen(resumen);
+
+            this.view.renderResumen(
+                this.model.calcularResumen()
+            );
+
             this.view.ocultarMensajeCarga();
 
-            this.view.anunciar(`Se cargaron ${incidentes.length} incidentes.`);
+            this.view.anunciar(
+                `Se cargaron ${incidentes.length} incidentes correctamente.`
+            );
 
         } catch (error) {
-
-            // sin sesión ya se mostró el inicio de sesión
-            if (error.estado === 401) {
-                return;
-            }
 
             console.error(error);
 
@@ -116,318 +101,251 @@ export class IncidentController {
         }
     }
 
+    /**
+     * Registra los manejadores de eventos.
+     */
     bindEventos() {
 
-        // inicio y cierre de sesión
-        this.$acceso.on("submit", (evento) => this.iniciarSesion(evento));
-        $("#boton-salir").on("click", () => this.salir("Sesión cerrada correctamente.", "exito"));
-
-        // ver detalle
+        // Ver detalle de un incidente
         $("#lista-incidentes").on(
             "click",
             "button[data-incidente]",
-            (evento) => this.verDetalle($(evento.currentTarget).data("incidente"))
+            (evento) => {
+
+                const id =
+                    $(evento.currentTarget).data("incidente");
+
+                const incidente =
+                    repositorio.obtenerPorId(id);
+
+                if (!incidente) {
+
+                    this.view.mostrarError(
+                        `No existe un incidente con id ${id}`
+                    );
+
+                    return;
+                }
+
+                this.view.renderDetalle(incidente);
+
+                this.view.anunciar(
+                    `Mostrando detalle de ${incidente.titulo}`
+                );
+            }
         );
 
-        // editar y eliminar desde el detalle
-        $("#detalle-contenido").on(
-            "click",
-            "button[data-editar]",
-            (evento) => this.editar($(evento.currentTarget).data("editar"))
-        );
-
-        $("#detalle-contenido").on(
-            "click",
-            "button[data-eliminar]",
-            (evento) => this.eliminar($(evento.currentTarget).data("eliminar"))
-        );
-
-        $("#boton-cancelar").on("click", () => this.cancelarEdicion());
-
-        // filtros
-        this.$filtros.on("change", "select", () => this.actualizarPantalla());
-
-        this.$filtros.on("reset", () => {
-            // el reset limpia los campos después del evento
-            setTimeout(() => this.actualizarPantalla(), 0);
-        });
-
-        this.$filtros.on("submit", (evento) => evento.preventDefault());
-
-        // validación mientras se escribe
+        // Validación dinámica
         this.$formulario
             .find("input, select, textarea")
             .not("[type=radio]")
             .on(
                 "input blur change",
-                (evento) => this.validarCampo(evento.target.id)
+                (evento) =>
+                    this.validarCampo(evento.target.id)
             );
 
+        // Validación de prioridad
         this.$formulario
             .find("[name=prioridad]")
-            .on("change", () => this.validarPrioridad());
+            .on(
+                "change",
+                () => this.validarPrioridad()
+            );
 
+        // Envío del formulario
         this.$formulario.on(
             "submit",
-            (evento) => this.guardarIncidente(evento)
+            (evento) =>
+                this.registrarIncidente(evento)
         );
     }
 
-    async iniciarSesion(evento) {
-
-        evento.preventDefault();
-
-        const correo = $("#acceso-correo").val().trim();
-        const contrasena = $("#acceso-contrasena").val();
-        let valido = true;
-
-        if (!CORREO_VALIDO.test(correo)) {
-            this.view.marcarCampoInvalido("acceso-correo", "Ingrese un correo electrónico válido.");
-            valido = false;
-        } else {
-            this.view.marcarCampoValido("acceso-correo");
-        }
-
-        if (contrasena === "") {
-            this.view.marcarCampoInvalido("acceso-contrasena", "Ingrese su contraseña.");
-            valido = false;
-        } else {
-            this.view.marcarCampoValido("acceso-contrasena");
-        }
-
-        if (!valido) {
-            this.view.anunciar("Revise los campos marcados.");
-            return;
-        }
-
-        const $boton = this.$acceso.find("button[type=submit]");
-        $boton.prop("disabled", true);
-
-        try {
-
-            await this.sesion.iniciar(correo, contrasena);
-            await this.entrar();
-
-        } catch (error) {
-
-            this.view.mostrarMensajeAcceso(error.message);
-            $("#acceso-contrasena").val("").trigger("focus");
-
-        } finally {
-
-            $boton.prop("disabled", false);
-        }
-    }
-
-    async verDetalle(id) {
-        try {
-
-            const incidente = await this.model.obtenerPorId(id);
-
-            this.view.renderDetalle(incidente, this.sesion.esAdmin());
-            this.view.anunciar(`Mostrando detalle de ${incidente.codigo}`);
-
-        } catch (error) {
-
-            if (error.estado !== 401) {
-                this.view.mostrarError(error.message);
-            }
-        }
-    }
-
-    async editar(id) {
-        try {
-
-            const incidente = await this.model.obtenerPorId(id);
-
-            this.editandoId = incidente.id;
-            this.view.modoEdicion(incidente);
-            this.view.anunciar(`Editando ${incidente.codigo}`);
-
-        } catch (error) {
-
-            if (error.estado !== 401) {
-                this.view.mostrarError(error.message);
-            }
-        }
-    }
-
-    cancelarEdicion() {
-        this.editandoId = null;
-        this.view.modoCreacion();
-        this.view.anunciar("Edición cancelada.");
-    }
-
-    async eliminar(id) {
-
-        const incidente = this.model.incidentes.find((i) => i.id === id);
-        const codigo = incidente ? incidente.codigo : `el incidente ${id}`;
-
-        // eliminar no se puede deshacer, por eso se pide confirmación
-        if (!window.confirm(`¿Eliminar ${codigo}? Esta acción no se puede deshacer.`)) {
-            return;
-        }
-
-        try {
-
-            await this.model.eliminar(id);
-
-            if (this.editandoId === id) {
-                this.cancelarEdicion();
-            }
-
-            this.view.limpiarDetalle();
-            await this.actualizarPantalla();
-            this.view.anunciar(`El incidente ${codigo} fue eliminado.`);
-
-        } catch (error) {
-
-            // 403 si el rol no tiene permiso, la api tiene la última palabra
-            if (error.estado !== 401) {
-                this.view.mostrarError(error.message);
-            }
-        }
-    }
-
+    /**
+     * Valida un campo individual según las reglas definidas arriba.
+     */
     validarCampo(idCampo) {
 
-        const regla = this.reglas[idCampo];
+        const regla =
+            this.reglas[idCampo];
 
-        // al editar el correo no se puede cambiar, no hace falta validarlo
-        if (!regla || (idCampo === "correo" && this.editandoId !== null)) {
+        if (!regla) {
             return true;
         }
 
-        const resultado = regla(document.getElementById(idCampo).value);
+        const valor =
+            document.getElementById(idCampo).value;
+
+        const resultado =
+            regla(valor);
 
         if (resultado === true) {
+
             this.view.marcarCampoValido(idCampo);
+
             return true;
         }
 
-        this.view.marcarCampoInvalido(idCampo, resultado);
-
-        return false;
-    }
-
-    validarPrioridad() {
-
-        if ($("input[name=prioridad]:checked").length > 0) {
-            this.view.marcarCampoValido("prioridad");
-            return true;
-        }
-
-        this.view.marcarCampoInvalido("prioridad", "Debe seleccionar una prioridad.");
-
-        return false;
-    }
-
-    enfocarPrimerCampoInvalido(camposAValidar) {
-
-        const primerInvalido = camposAValidar.find(
-            (id) => document.getElementById(id).getAttribute("aria-invalid") === "true"
+        this.view.marcarCampoInvalido(
+            idCampo,
+            resultado
         );
 
+        return false;
+    }
+
+    /**
+     * Valida el grupo de radios de prioridad.
+     */
+    validarPrioridad() {
+
+        const seleccionado =
+            $("input[name=prioridad]:checked").length > 0;
+
+        if (seleccionado) {
+
+            this.view.marcarCampoValido(
+                "prioridad"
+            );
+
+            return true;
+        }
+
+        this.view.marcarCampoInvalido(
+            "prioridad",
+            "Debe seleccionar una prioridad."
+        );
+
+        return false;
+    }
+
+    /**
+     * Lleva el foco al primer campo marcado como inválido.
+     */
+    enfocarPrimerCampoInvalido(camposAValidar) {
+
+        const primerInvalido =
+            camposAValidar.find(
+                (id) =>
+                    document
+                        .getElementById(id)
+                        .getAttribute("aria-invalid") === "true"
+            );
+
         if (primerInvalido) {
-            document.getElementById(primerInvalido).focus();
+
+            document
+                .getElementById(primerInvalido)
+                .focus();
+
             return;
         }
 
-        if (document.getElementById("prioridad").getAttribute("aria-invalid") === "true") {
-            document.getElementById("prioridad-baja").focus();
+        // Si el único error es la prioridad
+        if (
+            document
+                .getElementById("prioridad")
+                .getAttribute("aria-invalid") === "true"
+        ) {
+
+            document
+                .getElementById("prioridad-baja")
+                .focus();
         }
     }
 
-    // muestra en cada campo los errores que devuelve el servidor
-    mostrarErroresServidor(errores) {
-
-        // en la api el correo se llama reportadoPor
-        const equivalencias = { reportadoPor: "correo" };
-
-        Object.entries(errores).forEach(([nombre, mensaje]) => {
-            const campo = equivalencias[nombre] || nombre;
-
-            if (document.getElementById(campo)) {
-                this.view.marcarCampoInvalido(campo, mensaje);
-            }
-        });
-
-        this.enfocarPrimerCampoInvalido(Object.keys(this.reglas));
-    }
-
-    // registra uno nuevo o guarda los cambios del que se está editando
-    async guardarIncidente(evento) {
+    /**
+     * Maneja el envío del formulario.
+     */
+    registrarIncidente(evento) {
 
         evento.preventDefault();
 
-        this.view.ocultarMensajeRegistro();
+        const camposAValidar = [
+            "titulo",
+            "tipo",
+            "correo",
+            "fecha",
+            "descripcion"
+        ];
 
-        const camposAValidar = Object.keys(this.reglas);
-        const resultados = camposAValidar.map((id) => this.validarCampo(id));
-        const prioridadValida = this.validarPrioridad();
+        const resultados =
+            camposAValidar.map(
+                (id) =>
+                    this.validarCampo(id)
+            );
 
-        if (!resultados.every(Boolean) || !prioridadValida) {
+        const prioridadValida =
+            this.validarPrioridad();
 
-            this.view.anunciar("El formulario contiene errores. Revise los campos marcados.");
-            this.enfocarPrimerCampoInvalido(camposAValidar);
+        const formularioValido =
+            resultados.every(Boolean) &&
+            prioridadValida;
+
+        if (!formularioValido) {
+
+            this.view.anunciar(
+                "El formulario contiene errores. Revise los campos marcados."
+            );
+
+            this.enfocarPrimerCampoInvalido(
+                camposAValidar
+            );
 
             return;
         }
 
-        const datos = {
-            titulo: $("#titulo").val().trim(),
-            tipo: $("#tipo").val(),
-            prioridad: $("input[name=prioridad]:checked").val(),
-            fecha: $("#fecha").val(),
-            descripcion: $("#descripcion").val().trim(),
+        const datosIncidente = {
+
+            titulo:
+                $("#titulo")
+                    .val()
+                    .trim(),
+
+            tipo:
+                $("#tipo")
+                    .val(),
+
+            prioridad:
+                $("input[name=prioridad]:checked")
+                    .val(),
+
+            correo:
+                $("#correo")
+                    .val()
+                    .trim(),
+
+            fecha:
+                $("#fecha")
+                    .val(),
+
+            descripcion:
+                $("#descripcion")
+                    .val()
+                    .trim(),
         };
 
-        const editando = this.editandoId !== null;
-        const $boton = $("#boton-enviar");
-        $boton.prop("disabled", true);
+        const nuevoIncidente =
+            this.model.agregarIncidenteLocal(
+                datosIncidente
+            );
 
-        try {
+        this.view.renderLista(
+            this.model.obtenerTodos()
+        );
 
-            let incidente;
+        this.view.renderResumen(
+            this.model.calcularResumen()
+        );
 
-            if (editando) {
-                incidente = await this.model.actualizar(this.editandoId, { ...datos, estado: $("#estado").val() });
-            } else {
-                incidente = await this.model.crear({ ...datos, reportadoPor: $("#correo").val().trim() });
-            }
+        this.view.limpiarFormulario(
+            this.$formulario
+        );
 
-            const mensaje = editando
-                ? `Incidente ${incidente.codigo} actualizado correctamente`
-                : `Incidente ${incidente.codigo} registrado exitosamente`;
+        this.view.mostrarRegistroExitoso();
 
-            this.editandoId = null;
-            this.view.modoCreacion();
-            this.view.mostrarRegistroExitoso(mensaje);
-            this.view.anunciar(mensaje);
-
-            await this.actualizarPantalla();
-
-            if (editando) {
-                this.view.renderDetalle(incidente, this.sesion.esAdmin());
-            }
-
-        } catch (error) {
-
-            if (error.estado === 401) {
-                return;
-            }
-
-            console.error(error);
-
-            const accion = editando ? "guardar los cambios" : "registrar el incidente";
-
-            this.mostrarErroresServidor(error.errores || {});
-            this.view.mostrarErrorRegistro(`No se pudo ${accion}. ${error.message}`);
-            this.view.anunciar(`No se pudo ${accion}.`);
-
-        } finally {
-
-            $boton.prop("disabled", false);
-        }
+        this.view.anunciar(
+            `El incidente ${nuevoIncidente.id} fue registrado correctamente.`
+        );
     }
 }

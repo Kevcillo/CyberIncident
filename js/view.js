@@ -39,49 +39,6 @@ export class IncidentView {
         this.$contadorCerrados = $("#contador-cerrados");
     }
 
-    // pantalla de inicio de sesión, oculta todo el panel
-    mostrarAcceso(mensaje, tipo = "error") {
-        this.$panel.attr("hidden", true);
-        this.$usuarioSesion.attr("hidden", true);
-        this.$acceso.removeAttr("hidden");
-        $("#form-acceso")[0].reset();
-
-        if (mensaje) {
-            this.mostrarMensajeAcceso(mensaje, tipo);
-        } else {
-            this.ocultarMensajeAcceso();
-        }
-
-        $("#acceso-correo").trigger("focus");
-    }
-
-    // panel de incidentes con el nombre y rol del usuario
-    mostrarPanel(usuario) {
-        this.$acceso.attr("hidden", true);
-        this.$panel.removeAttr("hidden");
-        this.ocultarMensajeAcceso();
-
-        $("#usuario-nombre").text(usuario.nombre);
-        $("#usuario-rol").text(usuario.rol);
-        this.$usuarioSesion.removeAttr("hidden");
-
-        $("#titulo-resumen").attr("tabindex", "-1").trigger("focus");
-    }
-
-    // tipo es error o exito, cambia el color del aviso
-    mostrarMensajeAcceso(mensaje, tipo = "error") {
-        this.$mensajeAcceso
-            .removeClass("error exito")
-            .addClass(tipo)
-            .text(mensaje)
-            .removeAttr("hidden");
-        this.anunciar(mensaje);
-    }
-
-    ocultarMensajeAcceso() {
-        this.$mensajeAcceso.attr("hidden", true).text("");
-    }
-
     mostrarCargando() {
         this.$listaIncidentes.attr("aria-busy", "true");
         this.$mensajeCarga
@@ -106,11 +63,11 @@ export class IncidentView {
         this.$mensajeCarga.hide();
     }
 
-    mostrarRegistroExitoso(mensaje) {
+    mostrarRegistroExitoso(codigo) {
         this.$mensajeRegistro
             .removeClass("error")
             .addClass("exito")
-            .text(mensaje)
+            .text(`Incidente ${codigo} registrado exitosamente`)
             .removeAttr("hidden");
     }
 
@@ -175,15 +132,7 @@ export class IncidentView {
         this.$listaIncidentes.attr("aria-busy", "false");
     }
 
-    // los botones dependen del rol, eliminar solo aparece para el administrador
-    renderDetalle(incidente, puedeEliminar) {
-
-        const id = escaparHtml(incidente.id);
-        const etiqueta = escaparHtml(nombre(incidente));
-
-        const botonEliminar = puedeEliminar
-            ? `<button type="button" class="peligro" data-eliminar="${id}" aria-label="Eliminar ${etiqueta}">Eliminar</button>`
-            : `<p class="nota-permiso">Solo el administrador puede eliminar incidentes.</p>`;
+    renderDetalle(incidente) {
 
         this.$detalleContenido.html(`
             <h3>${escaparHtml(nombre(incidente))}</h3>
@@ -195,53 +144,9 @@ export class IncidentView {
             <p><strong>Responsable:</strong> ${escaparHtml(incidente.responsable)}</p>
             <h4>Descripción</h4>
             <p>${escaparHtml(incidente.descripcion)}</p>
-            <div class="acciones-detalle">
-                <button type="button" data-editar="${id}" aria-label="Editar ${etiqueta}">Editar</button>
-                ${botonEliminar}
-            </div>
         `);
 
         document.querySelector("#detalle").scrollIntoView({ behavior: "smooth" });
-    }
-
-    limpiarDetalle() {
-        this.$detalleContenido.html("<p>Seleccione un incidente del listado para ver su detalle.</p>");
-    }
-
-    // llena el formulario con el incidente y lo prepara para guardar cambios
-    modoEdicion(incidente) {
-        const $formulario = $("#form-incidente");
-        this.limpiarFormulario($formulario);
-        this.ocultarMensajeRegistro();
-
-        $("#titulo").val(incidente.titulo);
-        $("#tipo").val(incidente.tipo);
-        $(`input[name=prioridad][value="${incidente.prioridad}"]`).prop("checked", true);
-        $("#estado").val(incidente.estado);
-        $("#correo").val(incidente.reportadoPor).prop("disabled", true);
-        $("#fecha").val(incidente.fecha);
-        $("#descripcion").val(incidente.descripcion);
-
-        this.$grupoEstado.removeAttr("hidden");
-        this.$tituloRegistro.text(`Editar incidente ${incidente.codigo}`);
-        this.$ayudaFormulario.text("Modifique los campos necesarios y guarde los cambios. El correo del reportante no se puede cambiar.");
-        this.$botonEnviar.text("Guardar cambios");
-        this.$botonCancelar.removeAttr("hidden");
-
-        document.querySelector("#registrar").scrollIntoView({ behavior: "smooth" });
-        $("#titulo").trigger("focus");
-    }
-
-    // vuelve el formulario a su uso normal de registro
-    modoCreacion() {
-        this.limpiarFormulario($("#form-incidente"));
-
-        $("#correo").prop("disabled", false);
-        this.$grupoEstado.attr("hidden", true);
-        this.$tituloRegistro.text("Registrar nuevo incidente");
-        this.$ayudaFormulario.text("Complete todos los campos obligatorios para registrar un nuevo incidente de ciberseguridad.");
-        this.$botonEnviar.text("Registrar incidente");
-        this.$botonCancelar.attr("hidden", true);
     }
 
     marcarCampoInvalido(idCampo, mensaje) {

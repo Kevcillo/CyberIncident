@@ -47,7 +47,7 @@
 
 
     <!-- navegación -->
-    <nav aria-label="Navegación principal" hidden>
+    <nav aria-label="Navegación principal">
         <button
             type="button"
             class="menu-toggle"
@@ -67,68 +67,8 @@
     </nav>
 
 
-    <!-- inicio de sesión -->
-    <section id="acceso" aria-labelledby="titulo-acceso">
-
-        <h2 id="titulo-acceso">Iniciar sesión</h2>
-
-        <p>Ingrese con su correo y contraseña para gestionar los incidentes.</p>
-
-        <form id="form-acceso" novalidate>
-
-            <div>
-                <label for="acceso-correo">Correo</label>
-                <input
-                    type="email"
-                    id="acceso-correo"
-                    name="correo"
-                    autocomplete="username"
-                    required
-                    aria-describedby="error-acceso-correo"
-                    aria-invalid="false"
-                >
-                <span id="error-acceso-correo" class="error-campo" role="alert"></span>
-            </div>
-
-            <div>
-                <label for="acceso-contrasena">Contraseña</label>
-                <input
-                    type="password"
-                    id="acceso-contrasena"
-                    name="contrasena"
-                    autocomplete="current-password"
-                    required
-                    aria-describedby="error-acceso-contrasena"
-                    aria-invalid="false"
-                >
-                <span id="error-acceso-contrasena" class="error-campo" role="alert"></span>
-            </div>
-
-            <button type="submit">Ingresar</button>
-
-        </form>
-
-        <div id="mensaje-acceso" class="mensaje-estado error" role="alert" hidden></div>
-
-        <!-- usuarios de demostración para revisar el proyecto -->
-        <details>
-            <summary>Usuarios de prueba</summary>
-            <table>
-                <thead>
-                    <tr><th>Correo</th><th>Contraseña</th><th>Rol</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td>admin@cyberincident.com</td><td>Admin123!</td><td>admin</td></tr>
-                    <tr><td>analista@cyberincident.com</td><td>Analista123!</td><td>analista</td></tr>
-                </tbody>
-            </table>
-        </details>
-
-    </section>
-
-
-    <!-- contenido, visible solo con sesión -->
-    <main id="inicio" hidden>
+    <!-- contenido -->
+    <main id="inicio">
 
         <!-- estado de carga o error -->
         <div id="mensaje-carga" class="mensaje-estado cargando" role="status">
@@ -344,20 +284,6 @@
                 </fieldset>
 
 
-                <!-- estado, solo al editar -->
-                <div id="grupo-estado" hidden>
-                    <label for="estado">Estado del incidente</label>
-
-                    <select id="estado" name="estado" aria-describedby="error-estado" aria-invalid="false">
-                        <option value="Abierto">Abierto</option>
-                        <option value="En investigación">En investigación</option>
-                        <option value="Cerrado">Cerrado</option>
-                    </select>
-
-                    <span id="error-estado" class="error-campo" role="alert"></span>
-                </div>
-
-
                 <!-- correo -->
                 <div>
                     <label for="correo">Correo del reportante</label>
@@ -424,10 +350,9 @@
 
 
                 <!-- enviar -->
-                <div class="acciones-formulario">
-                    <button type="submit" id="boton-enviar">Registrar incidente</button>
-                    <button type="button" id="boton-cancelar" class="secundario" hidden>Cancelar edición</button>
-                </div>
+                <button type="submit">
+                    Registrar incidente
+                </button>
 
             </form>
 
@@ -449,10 +374,10 @@
             >Información del sistema</h2>
 
             <p>
-                CyberIncident permite registrar, consultar, editar, eliminar y filtrar
-                incidentes de seguridad. El acceso requiere iniciar sesión: el
-                administrador puede realizar todas las acciones y el analista todas
-                excepto eliminar. Los datos se guardan en una base de datos SQLite.
+                CyberIncident permite registrar, consultar, filtrar y monitorear
+                incidentes de seguridad de forma organizada. Los datos se obtienen
+                de la API del servidor y se guardan en una base de datos SQLite,
+                por lo que se conservan aunque el servidor se reinicie.
             </p>
 
             <h3 class="font-semibold">Recomendación</h3>
@@ -477,7 +402,7 @@
         <p>
             Plataforma demostrativa para la gestión de incidentes
             de ciberseguridad. Unidad 2: JavaScript moderno, DOM, Fetch API,
-            ARIA, jQuery, arquitectura MVC, API REST con Express, base de datos SQLite y seguridad con JWT.
+            ARIA, jQuery, arquitectura MVC, API REST con Express y base de datos SQLite.
         </p>
 
     </footer>

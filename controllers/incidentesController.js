@@ -93,7 +93,7 @@ async function crearIncidente(req, res) {
     res.status(201).json({ exito: true, datos: nuevo });
 }
 
-// PATCH /api/incidentes/:id, cambia solo los campos enviados
+// PUT /api/incidentes/:id, cambia solo los campos enviados
 async function actualizarIncidente(req, res) {
     const incidente = await buscarOFallar(leerId(req));
     const cambios = limpiar(req.body || {}, CAMPOS_EDITAR);
@@ -110,26 +110,6 @@ async function actualizarIncidente(req, res) {
     res.status(200).json({ exito: true, datos: incidente });
 }
 
-// PUT /api/incidentes/:id, reemplaza el incidente completo, exige todos los campos editables
-async function reemplazarIncidente(req, res) {
-    const incidente = await buscarOFallar(leerId(req));
-    const datos = limpiar(req.body || {}, CAMPOS_EDITAR);
-    const faltantes = CAMPOS_EDITAR.filter((campo) => datos[campo] === undefined);
-
-    if (faltantes.length > 0) {
-        const errores = {};
-        faltantes.forEach((campo) => {
-            errores[campo] = "Campo obligatorio para reemplazar el incidente. Use PATCH para cambios parciales.";
-        });
-
-        throw new DatosInvalidos(errores);
-    }
-
-    await incidente.update(datos, { fields: CAMPOS_EDITAR });
-
-    res.status(200).json({ exito: true, datos: incidente });
-}
-
 // DELETE /api/incidentes/:id
 async function eliminarIncidente(req, res) {
     const incidente = await buscarOFallar(leerId(req));
@@ -140,12 +120,9 @@ async function eliminarIncidente(req, res) {
 }
 
 module.exports = {
-    CAMPOS_CREAR,
-    CAMPOS_EDITAR,
     listarIncidentes,
     obtenerIncidente,
     crearIncidente,
     actualizarIncidente,
-    reemplazarIncidente,
     eliminarIncidente,
 };

@@ -34,10 +34,6 @@ function manejadorErrores(err, req, res, next) {
         return responder(res, 400, "El cuerpo de la petición no es un JSON válido.");
     }
 
-    if (err.type === "entity.too.large") {
-        return responder(res, 413, "La petición es demasiado grande. El máximo es 10 KB.");
-    }
-
     if (err instanceof UniqueConstraintError) {
         return responder(res, 409, "Ya existe un registro con esos datos.");
     }
