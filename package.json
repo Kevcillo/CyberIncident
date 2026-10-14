@@ -1,0 +1,48 @@
+{
+  "name": "cyberincident-n3-prototipo",
+  "version": "1.0.0",
+  "description": "Plataforma CyberIncident con API REST, Express y base de datos SQLite",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "setup": "node scripts/setup.js",
+    "migrate": "sequelize-cli db:migrate --config config/database.js --migrations-path migrations --seeders-path seeders --models-path models",
+    "migrate:undo": "sequelize-cli db:migrate:undo:all --config config/database.js --migrations-path migrations --seeders-path seeders --models-path models",
+    "seed": "sequelize-cli db:seed:all --config config/database.js --migrations-path migrations --seeders-path seeders --models-path models",
+    "test": "jest --runInBand"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kevcillo/CyberIncident.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Kevcillo/CyberIncident/issues"
+  },
+  "homepage": "https://github.com/Kevcillo/CyberIncident#readme",
+  "type": "commonjs",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.5",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "sequelize": "^6.37.8",
+    "sequelize-cli": "^6.6.5",
+    "sqlite3": "^6.0.1"
+  },
+  "devDependencies": {
+    "jest": "^30.5.2",
+    "supertest": "^7.3.1"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "globalSetup": "./tests/preparar.js",
+    "maxWorkers": 1
+  }
+}

@@ -21,10 +21,10 @@
 
 <body>
 
-    <!-- Región ARIA para anuncios dinámicos (lectores de pantalla) -->
+    <!-- avisos para lectores de pantalla -->
     <div id="anuncios-aria" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 
-    <!-- Encabezado principal -->
+    <!-- encabezado -->
     <header>
         <div>
             <h1>CyberIncident</h1>
@@ -33,12 +33,21 @@
 
         <div>
             <p class="font-semibold tracking-wide">Panel de monitoreo</p>
+
+            <!-- usuario conectado -->
+            <div id="usuario-sesion" hidden>
+                <p>
+                    <span id="usuario-nombre"></span>
+                    <span id="usuario-rol" class="etiqueta-rol"></span>
+                </p>
+                <button type="button" id="boton-salir">Cerrar sesión</button>
+            </div>
         </div>
     </header>
 
 
-    <!-- Navegación principal -->
-    <nav aria-label="Navegación principal">
+    <!-- navegación -->
+    <nav aria-label="Navegación principal" hidden>
         <button
             type="button"
             class="menu-toggle"
@@ -58,15 +67,75 @@
     </nav>
 
 
-    <!-- Contenido principal -->
-    <main id="inicio">
+    <!-- inicio de sesión -->
+    <section id="acceso" aria-labelledby="titulo-acceso">
 
-        <!-- Mensaje de estado de carga / error (Fetch API) -->
+        <h2 id="titulo-acceso">Iniciar sesión</h2>
+
+        <p>Ingrese con su correo y contraseña para gestionar los incidentes.</p>
+
+        <form id="form-acceso" novalidate>
+
+            <div>
+                <label for="acceso-correo">Correo</label>
+                <input
+                    type="email"
+                    id="acceso-correo"
+                    name="correo"
+                    autocomplete="username"
+                    required
+                    aria-describedby="error-acceso-correo"
+                    aria-invalid="false"
+                >
+                <span id="error-acceso-correo" class="error-campo" role="alert"></span>
+            </div>
+
+            <div>
+                <label for="acceso-contrasena">Contraseña</label>
+                <input
+                    type="password"
+                    id="acceso-contrasena"
+                    name="contrasena"
+                    autocomplete="current-password"
+                    required
+                    aria-describedby="error-acceso-contrasena"
+                    aria-invalid="false"
+                >
+                <span id="error-acceso-contrasena" class="error-campo" role="alert"></span>
+            </div>
+
+            <button type="submit">Ingresar</button>
+
+        </form>
+
+        <div id="mensaje-acceso" class="mensaje-estado error" role="alert" hidden></div>
+
+        <!-- usuarios de demostración para revisar el proyecto -->
+        <details>
+            <summary>Usuarios de prueba</summary>
+            <table>
+                <thead>
+                    <tr><th>Correo</th><th>Contraseña</th><th>Rol</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>admin@cyberincident.com</td><td>Admin123!</td><td>admin</td></tr>
+                    <tr><td>analista@cyberincident.com</td><td>Analista123!</td><td>analista</td></tr>
+                </tbody>
+            </table>
+        </details>
+
+    </section>
+
+
+    <!-- contenido, visible solo con sesión -->
+    <main id="inicio" hidden>
+
+        <!-- estado de carga o error -->
         <div id="mensaje-carga" class="mensaje-estado cargando" role="status">
             Cargando incidentes...
         </div>
 
-        <!-- Resumen de incidentes -->
+        <!-- resumen -->
         <section id="resumen" aria-labelledby="titulo-resumen">
 
             <h2 id="titulo-resumen">Resumen de incidentes</h2>
@@ -98,19 +167,59 @@
         </section>
 
 
-        <!-- Lista de incidentes (se llena dinámicamente vía Fetch + DOM) -->
+        <!-- listado con filtros -->
         <section id="incidentes" aria-labelledby="titulo-incidentes">
 
             <h2 id="titulo-incidentes">Listado de incidentes</h2>
 
+            <form id="form-filtros" aria-label="Filtrar incidentes">
+
+                <div>
+                    <label for="filtro-tipo">Tipo</label>
+                    <select id="filtro-tipo" name="tipo">
+                        <option value="">Todos</option>
+                        <option value="Phishing">Phishing</option>
+                        <option value="Malware">Malware</option>
+                        <option value="Intrusión">Intrusión</option>
+                        <option value="Fuga de información">Fuga de información</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="filtro-prioridad">Prioridad</label>
+                    <select id="filtro-prioridad" name="prioridad">
+                        <option value="">Todas</option>
+                        <option value="Baja">Baja</option>
+                        <option value="Media">Media</option>
+                        <option value="Alta">Alta</option>
+                        <option value="Crítica">Crítica</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="filtro-estado">Estado</label>
+                    <select id="filtro-estado" name="estado">
+                        <option value="">Todos</option>
+                        <option value="Abierto">Abierto</option>
+                        <option value="En investigación">En investigación</option>
+                        <option value="Cerrado">Cerrado</option>
+                    </select>
+                </div>
+
+                <button type="reset">Limpiar filtros</button>
+
+            </form>
+
+            <p id="total-filtrado" role="status"></p>
+
             <div id="lista-incidentes" aria-busy="true">
-                <!-- Las tarjetas de incidentes se generan dinámicamente en tiempo de ejecución -->
             </div>
 
         </section>
 
 
-        <!-- Detalle del incidente -->
+        <!-- detalle -->
         <section id="detalle" aria-labelledby="titulo-detalle">
 
             <h2 id="titulo-detalle">Detalle del incidente</h2>
@@ -122,7 +231,7 @@
         </section>
 
 
-        <!-- Formulario de registro -->
+        <!-- registro -->
         <section id="registrar" aria-labelledby="titulo-registro">
 
             <h2 id="titulo-registro">Registrar nuevo incidente</h2>
@@ -135,7 +244,7 @@
 
             <form id="form-incidente" novalidate>
 
-                <!-- Título -->
+                <!-- título -->
                 <div>
                     <label for="titulo">Título del incidente</label>
 
@@ -158,7 +267,7 @@
                 </div>
 
 
-                <!-- Tipo -->
+                <!-- tipo -->
                 <div>
                     <label for="tipo">Tipo de incidente</label>
 
@@ -184,8 +293,8 @@
                 </div>
 
 
-                <!-- Prioridad -->
-                <fieldset aria-describedby="error-prioridad">
+                <!-- prioridad -->
+                <fieldset id="prioridad" aria-describedby="error-prioridad" aria-invalid="false">
 
                     <legend>Prioridad del incidente</legend>
 
@@ -235,7 +344,21 @@
                 </fieldset>
 
 
-                <!-- Correo -->
+                <!-- estado, solo al editar -->
+                <div id="grupo-estado" hidden>
+                    <label for="estado">Estado del incidente</label>
+
+                    <select id="estado" name="estado" aria-describedby="error-estado" aria-invalid="false">
+                        <option value="Abierto">Abierto</option>
+                        <option value="En investigación">En investigación</option>
+                        <option value="Cerrado">Cerrado</option>
+                    </select>
+
+                    <span id="error-estado" class="error-campo" role="alert"></span>
+                </div>
+
+
+                <!-- correo -->
                 <div>
                     <label for="correo">Correo del reportante</label>
 
@@ -256,7 +379,7 @@
                 </div>
 
 
-                <!-- Fecha -->
+                <!-- fecha -->
                 <div>
                     <label for="fecha">Fecha del incidente</label>
 
@@ -277,7 +400,7 @@
                 </div>
 
 
-                <!-- Descripción -->
+                <!-- descripción -->
                 <div>
                     <label for="descripcion">Descripción del incidente</label>
 
@@ -300,10 +423,11 @@
                 </div>
 
 
-                <!-- Botón -->
-                <button type="submit">
-                    Registrar incidente
-                </button>
+                <!-- enviar -->
+                <div class="acciones-formulario">
+                    <button type="submit" id="boton-enviar">Registrar incidente</button>
+                    <button type="button" id="boton-cancelar" class="secundario" hidden>Cancelar edición</button>
+                </div>
 
             </form>
 
@@ -318,18 +442,17 @@
         </section>
 
 
-        <!-- Información adicional -->
+        <!-- información -->
         <aside class="shadow-sm" aria-labelledby="titulo-informacion">
 
             <h2 id="titulo-informacion" class="font-bold tracking-wide"
             >Información del sistema</h2>
 
             <p>
-                CyberIncident permite registrar, consultar y monitorear
-                incidentes de seguridad de forma organizada. Los incidentes base
-                se cargan desde un archivo JSON (modelo de solo lectura) y los
-                incidentes registrados en el formulario se agregan de forma
-                temporal en memoria durante la sesión.
+                CyberIncident permite registrar, consultar, editar, eliminar y filtrar
+                incidentes de seguridad. El acceso requiere iniciar sesión: el
+                administrador puede realizar todas las acciones y el analista todas
+                excepto eliminar. Los datos se guardan en una base de datos SQLite.
             </p>
 
             <h3 class="font-semibold">Recomendación</h3>
@@ -344,7 +467,7 @@
     </main>
 
 
-    <!-- Pie de página -->
+    <!-- pie de página -->
     <footer>
 
         <p>
@@ -354,15 +477,15 @@
         <p>
             Plataforma demostrativa para la gestión de incidentes
             de ciberseguridad. Unidad 2: JavaScript moderno, DOM, Fetch API,
-            ARIA, jQuery y arquitectura MVC.
+            ARIA, jQuery, arquitectura MVC, API REST con Express, base de datos SQLite y seguridad con JWT.
         </p>
 
     </footer>
 
-    <!-- jQuery -->
+    <!-- jquery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
-    <!-- Módulos de la aplicación (arquitectura MVC) -->
+    <!-- aplicación -->
     <script type="module" src="js/app.js"></script>
 
 </body>

@@ -1,17 +1,11 @@
-/**
- * PUNTO DE ENTRADA DE LA APLICACIÓN
- * -----------------------------------------------------------------------
- * Instancia el Modelo, la Vista y el Controlador (arquitectura MVC) y
- * arranca la carga de datos apenas el DOM está listo (jQuery ready).
- */
+// punto de entrada de la página, arma el modelo, la vista y el controlador
 
+import { Sesion } from "./sesion.js";
 import { IncidentModel } from "./model.js";
 import { IncidentView } from "./view.js";
 import { IncidentController } from "./controller.js";
 
 $(function () {
-
-    console.log("CyberIncident: JavaScript (Unidad 2) conectado correctamente.");
 
     const $navegacion = $("nav");
     const $botonMenu = $(".menu-toggle");
@@ -36,9 +30,10 @@ $(function () {
         }
     });
 
-    const modelo = new IncidentModel("data/incidentes.json");
+    const sesion = new Sesion("/api/auth");
+    const modelo = new IncidentModel("/api/incidentes", sesion);
     const vista = new IncidentView();
-    const controlador = new IncidentController(modelo, vista);
+    const controlador = new IncidentController(modelo, vista, sesion);
 
     controlador.iniciar();
 });

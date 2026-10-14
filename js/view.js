@@ -1,22 +1,11 @@
-/**
- * VISTA (V de MVC)
- * -----------------------------------------------------------------------
- * Responsable de TODO lo que toca el DOM: pintar tarjetas, actualizar el
- * resumen, mostrar el detalle, marcar errores de campos y anunciar
- * mensajes a los lectores de pantalla mediante regiones ARIA (aria-live).
- *
- * Usa jQuery para la manipulación del DOM (selección, creación de
- * elementos, eventos delegados se registran desde el Controlador).
- *
- * La Vista no decide reglas de negocio: solo dibuja lo que el
- * Controlador le indica.
- */
+// vista, todo lo que se pinta en la página
 
-/**
- * Escapa texto de origen no confiable (campos libres del formulario:
- * título, descripción, correo) antes de insertarlo como HTML, para
- * evitar inyección de código (XSS) en las tarjetas y el detalle.
- */
+// título con su código, por ejemplo INC-001 - Correo sospechoso
+function nombre(incidente) {
+    return `${incidente.codigo} - ${incidente.titulo}`;
+}
+
+// evita que el texto escrito por el usuario se interprete como html
 function escaparHtml(texto) {
     const contenedor = document.createElement("div");
     contenedor.textContent = String(texto ?? "");
@@ -29,8 +18,20 @@ export class IncidentView {
         this.$mensajeCarga = $("#mensaje-carga");
         this.$mensajeRegistro = $("#mensaje-registro");
         this.$listaIncidentes = $("#lista-incidentes");
+        this.$totalFiltrado = $("#total-filtrado");
         this.$detalleContenido = $("#detalle-contenido");
         this.$anunciosAria = $("#anuncios-aria");
+
+        this.$acceso = $("#acceso");
+        this.$mensajeAcceso = $("#mensaje-acceso");
+        this.$panel = $("main, nav");
+        this.$usuarioSesion = $("#usuario-sesion");
+
+        this.$tituloRegistro = $("#titulo-registro");
+        this.$ayudaFormulario = $("#ayuda-formulario");
+        this.$botonEnviar = $("#boton-enviar");
+        this.$botonCancelar = $("#boton-cancelar");
+        this.$grupoEstado = $("#grupo-estado");
 
         this.$contadorAbiertos = $("#contador-abiertos");
         this.$contadorInvestigacion = $("#contador-investigacion");
@@ -38,8 +39,51 @@ export class IncidentView {
         this.$contadorCerrados = $("#contador-cerrados");
     }
 
-    /** Muestra el mensaje de "Cargando..." mientras responde el Fetch. */
+    // pantalla de inicio de sesión, oculta todo el panel
+    mostrarAcceso(mensaje, tipo = "error") {
+        this.$panel.attr("hidden", true);
+        this.$usuarioSesion.attr("hidden", true);
+        this.$acceso.removeAttr("hidden");
+        $("#form-acceso")[0].reset();
+
+        if (mensaje) {
+            this.mostrarMensajeAcceso(mensaje, tipo);
+        } else {
+            this.ocultarMensajeAcceso();
+        }
+
+        $("#acceso-correo").trigger("focus");
+    }
+
+    // panel de incidentes con el nombre y rol del usuario
+    mostrarPanel(usuario) {
+        this.$acceso.attr("hidden", true);
+        this.$panel.removeAttr("hidden");
+        this.ocultarMensajeAcceso();
+
+        $("#usuario-nombre").text(usuario.nombre);
+        $("#usuario-rol").text(usuario.rol);
+        this.$usuarioSesion.removeAttr("hidden");
+
+        $("#titulo-resumen").attr("tabindex", "-1").trigger("focus");
+    }
+
+    // tipo es error o exito, cambia el color del aviso
+    mostrarMensajeAcceso(mensaje, tipo = "error") {
+        this.$mensajeAcceso
+            .removeClass("error exito")
+            .addClass(tipo)
+            .text(mensaje)
+            .removeAttr("hidden");
+        this.anunciar(mensaje);
+    }
+
+    ocultarMensajeAcceso() {
+        this.$mensajeAcceso.attr("hidden", true).text("");
+    }
+
     mostrarCargando() {
+        this.$listaIncidentes.attr("aria-busy", "true");
         this.$mensajeCarga
             .removeClass("error exito")
             .addClass("cargando")
@@ -47,8 +91,8 @@ export class IncidentView {
             .show();
     }
 
-    /** Muestra un mensaje de error (por ejemplo si falla el Fetch). */
     mostrarError(mensaje) {
+        this.$listaIncidentes.attr("aria-busy", "false");
         this.$mensajeCarga
             .removeClass("cargando exito")
             .addClass("error")
@@ -58,27 +102,37 @@ export class IncidentView {
         this.anunciar(mensaje);
     }
 
-    /** Oculta el mensaje de estado de carga cuando todo salió bien. */
     ocultarMensajeCarga() {
         this.$mensajeCarga.hide();
     }
 
-    /** Muestra confirmación visible después de registrar un incidente. */
-    mostrarRegistroExitoso() {
+    mostrarRegistroExitoso(mensaje) {
         this.$mensajeRegistro
-            .text("Incidente registrado exitosamente")
+            .removeClass("error")
+            .addClass("exito")
+            .text(mensaje)
             .removeAttr("hidden");
     }
 
-    /** Publica un texto en la región ARIA live para lectores de pantalla. */
+    mostrarErrorRegistro(mensaje) {
+        this.$mensajeRegistro
+            .removeClass("exito")
+            .addClass("error")
+            .text(mensaje)
+            .removeAttr("hidden");
+    }
+
+    ocultarMensajeRegistro() {
+        this.$mensajeRegistro.attr("hidden", true).text("");
+    }
+
+    // aviso para lectores de pantalla
     anunciar(mensaje) {
         this.$anunciosAria.text("");
-        // Pequeño retraso para forzar que los lectores de pantalla
-        // detecten el cambio aunque el mensaje sea igual al anterior.
+        // la pausa hace que se lea aunque el mensaje se repita
         setTimeout(() => this.$anunciosAria.text(mensaje), 50);
     }
 
-    /** Pinta el resumen numérico de incidentes. */
     renderResumen(resumen) {
         this.$contadorAbiertos.text(resumen.abiertos);
         this.$contadorInvestigacion.text(resumen.investigacion);
@@ -86,18 +140,21 @@ export class IncidentView {
         this.$contadorCerrados.text(resumen.cerrados);
     }
 
-    /** Construye y muestra las tarjetas del listado de incidentes. */
     renderLista(incidentes) {
 
         this.$listaIncidentes.empty();
+        const total = incidentes.length;
+        this.$totalFiltrado.text(`Mostrando ${total} ${total === 1 ? "incidente" : "incidentes"}.`);
+
+        if (incidentes.length === 0) {
+            this.$listaIncidentes.append("<p>No hay incidentes que coincidan con los filtros.</p>");
+        }
 
         incidentes.forEach((incidente) => {
 
             const $tarjeta = $("<article></article>");
 
-            // titulo viene de datos base o del formulario (texto libre):
-            // se escapa antes de insertarlo como HTML.
-            $tarjeta.append(`<h3>${escaparHtml(incidente.titulo)}</h3>`);
+            $tarjeta.append(`<h3>${escaparHtml(nombre(incidente))}</h3>`);
             $tarjeta.append(`<p><strong>Tipo:</strong> ${escaparHtml(incidente.tipo)}</p>`);
             $tarjeta.append(`<p><strong>Prioridad:</strong> ${escaparHtml(incidente.prioridad)}</p>`);
             $tarjeta.append(`<p><strong>Estado:</strong> ${escaparHtml(incidente.estado)}</p>`);
@@ -105,7 +162,7 @@ export class IncidentView {
 
             const $boton = $(
                 `<button type="button" class="btn btn-primary" data-incidente="${escaparHtml(incidente.id)}"
-                    aria-label="Ver detalle de ${escaparHtml(incidente.titulo)}">
+                    aria-label="Ver detalle de ${escaparHtml(nombre(incidente))}">
                     Ver detalle
                 </button>`
             );
@@ -118,11 +175,18 @@ export class IncidentView {
         this.$listaIncidentes.attr("aria-busy", "false");
     }
 
-    /** Pinta el detalle completo de un incidente seleccionado. */
-    renderDetalle(incidente) {
+    // los botones dependen del rol, eliminar solo aparece para el administrador
+    renderDetalle(incidente, puedeEliminar) {
+
+        const id = escaparHtml(incidente.id);
+        const etiqueta = escaparHtml(nombre(incidente));
+
+        const botonEliminar = puedeEliminar
+            ? `<button type="button" class="peligro" data-eliminar="${id}" aria-label="Eliminar ${etiqueta}">Eliminar</button>`
+            : `<p class="nota-permiso">Solo el administrador puede eliminar incidentes.</p>`;
 
         this.$detalleContenido.html(`
-            <h3>${escaparHtml(incidente.titulo)}</h3>
+            <h3>${escaparHtml(nombre(incidente))}</h3>
             <p><strong>Tipo:</strong> ${escaparHtml(incidente.tipo)}</p>
             <p><strong>Prioridad:</strong> ${escaparHtml(incidente.prioridad)}</p>
             <p><strong>Estado:</strong> ${escaparHtml(incidente.estado)}</p>
@@ -131,31 +195,65 @@ export class IncidentView {
             <p><strong>Responsable:</strong> ${escaparHtml(incidente.responsable)}</p>
             <h4>Descripción</h4>
             <p>${escaparHtml(incidente.descripcion)}</p>
-            <p><strong>Última actualización:</strong> ${escaparHtml(incidente.fecha)}</p>
+            <div class="acciones-detalle">
+                <button type="button" data-editar="${id}" aria-label="Editar ${etiqueta}">Editar</button>
+                ${botonEliminar}
+            </div>
         `);
 
         document.querySelector("#detalle").scrollIntoView({ behavior: "smooth" });
     }
 
-    /** Marca un campo como inválido y muestra su mensaje de error (ARIA). */
+    limpiarDetalle() {
+        this.$detalleContenido.html("<p>Seleccione un incidente del listado para ver su detalle.</p>");
+    }
+
+    // llena el formulario con el incidente y lo prepara para guardar cambios
+    modoEdicion(incidente) {
+        const $formulario = $("#form-incidente");
+        this.limpiarFormulario($formulario);
+        this.ocultarMensajeRegistro();
+
+        $("#titulo").val(incidente.titulo);
+        $("#tipo").val(incidente.tipo);
+        $(`input[name=prioridad][value="${incidente.prioridad}"]`).prop("checked", true);
+        $("#estado").val(incidente.estado);
+        $("#correo").val(incidente.reportadoPor).prop("disabled", true);
+        $("#fecha").val(incidente.fecha);
+        $("#descripcion").val(incidente.descripcion);
+
+        this.$grupoEstado.removeAttr("hidden");
+        this.$tituloRegistro.text(`Editar incidente ${incidente.codigo}`);
+        this.$ayudaFormulario.text("Modifique los campos necesarios y guarde los cambios. El correo del reportante no se puede cambiar.");
+        this.$botonEnviar.text("Guardar cambios");
+        this.$botonCancelar.removeAttr("hidden");
+
+        document.querySelector("#registrar").scrollIntoView({ behavior: "smooth" });
+        $("#titulo").trigger("focus");
+    }
+
+    // vuelve el formulario a su uso normal de registro
+    modoCreacion() {
+        this.limpiarFormulario($("#form-incidente"));
+
+        $("#correo").prop("disabled", false);
+        this.$grupoEstado.attr("hidden", true);
+        this.$tituloRegistro.text("Registrar nuevo incidente");
+        this.$ayudaFormulario.text("Complete todos los campos obligatorios para registrar un nuevo incidente de ciberseguridad.");
+        this.$botonEnviar.text("Registrar incidente");
+        this.$botonCancelar.attr("hidden", true);
+    }
+
     marcarCampoInvalido(idCampo, mensaje) {
-        const $campo = $(`#${idCampo}`);
-        const $error = $(`#error-${idCampo}`);
-
-        $campo.attr("aria-invalid", "true");
-        $error.text(mensaje);
+        $(`#${idCampo}`).attr("aria-invalid", "true");
+        $(`#error-${idCampo}`).text(mensaje);
     }
 
-    /** Marca un campo como válido y limpia su mensaje de error. */
     marcarCampoValido(idCampo) {
-        const $campo = $(`#${idCampo}`);
-        const $error = $(`#error-${idCampo}`);
-
-        $campo.attr("aria-invalid", "false");
-        $error.text("");
+        $(`#${idCampo}`).attr("aria-invalid", "false");
+        $(`#error-${idCampo}`).text("");
     }
 
-    /** Limpia el formulario y todos los estados de validación visual. */
     limpiarFormulario($formulario) {
         $formulario[0].reset();
         $formulario.find("[aria-invalid]").attr("aria-invalid", "false");

@@ -1,89 +1,100 @@
-/**
- * MODELO (M de MVC)
- * -----------------------------------------------------------------------
- * Responsable de obtener y exponer los datos de los incidentes.
- *
- * - Los incidentes "base" se obtienen mediante Fetch API desde un archivo
- *   JSON externo (data/incidentes.json) y se congelan con Object.freeze,
- *   de manera que constituyen un MODELO LOCAL DE SOLO LECTURA: ninguna
- *   otra parte de la aplicación puede modificar esos objetos.
- * - Los incidentes que el usuario registra desde el formulario se
- *   almacenan aparte, en memoria (solo durante la sesión del navegador),
- *   sin alterar el archivo JSON original.
- *
- * El Modelo no conoce el DOM ni jQuery: solo maneja datos.
- */
+// modelo del navegador, se comunica con la api usando fetch y el token de la sesión
 
 export class IncidentModel {
 
-    constructor(urlDatos) {
-        this.urlDatos = urlDatos;
-        this.incidentesBase = [];   // Datos de solo lectura (Fetch + JSON)
-        this.incidentesLocales = []; // Incidentes creados en el formulario (runtime)
+    constructor(urlApi, sesion) {
+        this.urlApi = urlApi;
+        this.sesion = sesion;
+        this.incidentes = [];
+
+        // el controlador decide qué hacer cuando la sesión deja de ser válida
+        this.alPerderSesion = () => {};
     }
 
-    /**
-     * Descarga el JSON de incidentes usando Fetch API (async/await).
-     * Devuelve una promesa con el arreglo de incidentes cargados.
-     */
-    async cargarDatos() {
+    // hace la petición con el token y devuelve la respuesta json o lanza un error
+    async peticion(url, opciones = {}) {
+        const cabeceras = { ...(opciones.headers || {}) };
 
-        const respuesta = await fetch(this.urlDatos);
-
-        if (!respuesta.ok) {
-            throw new Error(
-                `No se pudo obtener el archivo de incidentes (HTTP ${respuesta.status}).`
-            );
+        if (this.sesion.token) {
+            cabeceras.Authorization = `Bearer ${this.sesion.token}`;
         }
 
-        const datos = await respuesta.json();
+        const respuesta = await fetch(url, { ...opciones, headers: cabeceras });
+        const cuerpo = await respuesta.json().catch(() => ({}));
 
-        // Se congela cada incidente para garantizar que el modelo base
-        // permanezca de solo lectura durante toda la ejecución.
-        this.incidentesBase = datos.map((incidente) => Object.freeze({ ...incidente }));
+        if (!respuesta.ok) {
+            const error = new Error(cuerpo.mensaje || `Error HTTP ${respuesta.status}`);
+            error.estado = respuesta.status;
+            error.errores = cuerpo.errores || {};
 
-        return this.incidentesBase;
+            // token vencido o inválido, hay que volver a iniciar sesión
+            if (respuesta.status === 401) {
+                this.sesion.cerrar();
+                this.alPerderSesion(error.message);
+            }
+
+            throw error;
+        }
+
+        return cuerpo;
     }
 
-    /** Devuelve todos los incidentes (base + agregados localmente). */
-    obtenerTodos() {
-        return [...this.incidentesBase, ...this.incidentesLocales];
-    }
+    // lista incidentes, los filtros vacíos se ignoran
+    async listar(filtros = {}) {
+        const parametros = new URLSearchParams();
 
-    /** Busca un incidente por su identificador (INC-XXX). */
-    obtenerPorId(id) {
-        return this.obtenerTodos().find((incidente) => incidente.id === id);
-    }
-
-    /**
-     * Agrega un incidente nuevo SOLO en memoria (no modifica el JSON,
-     * que se mantiene siempre como fuente de solo lectura).
-     */
-    agregarIncidenteLocal(datosIncidente) {
-
-        const nuevoId = `INC-${String(this.obtenerTodos().length + 1).padStart(3, "0")}`;
-
-        const nuevoIncidente = Object.freeze({
-            id: nuevoId,
-            titulo: `${nuevoId} - ${datosIncidente.titulo}`,
-            tipo: datosIncidente.tipo,
-            prioridad: datosIncidente.prioridad,
-            estado: "Abierto",
-            fecha: datosIncidente.fecha,
-            reportadoPor: datosIncidente.correo,
-            responsable: "Equipo de Seguridad",
-            descripcion: datosIncidente.descripcion,
+        Object.entries(filtros).forEach(([campo, valor]) => {
+            if (valor) {
+                parametros.append(campo, valor);
+            }
         });
 
-        this.incidentesLocales.push(nuevoIncidente);
+        const consulta = parametros.toString();
+        const url = consulta ? `${this.urlApi}?${consulta}` : this.urlApi;
+        const { datos } = await this.peticion(url);
 
-        return nuevoIncidente;
+        this.incidentes = datos;
+
+        return datos;
     }
 
-    /** Calcula los contadores del resumen a partir del estado actual. */
-    calcularResumen() {
+    async obtenerPorId(id) {
+        const { datos } = await this.peticion(`${this.urlApi}/${encodeURIComponent(id)}`);
+        return datos;
+    }
 
-        const todos = this.obtenerTodos();
+    async crear(datosIncidente) {
+        const { datos } = await this.peticion(this.urlApi, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(datosIncidente),
+        });
+
+        return datos;
+    }
+
+    // cambia solo los campos enviados
+    async actualizar(id, cambios) {
+        const { datos } = await this.peticion(`${this.urlApi}/${encodeURIComponent(id)}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(cambios),
+        });
+
+        return datos;
+    }
+
+    async eliminar(id) {
+        const { datos } = await this.peticion(`${this.urlApi}/${encodeURIComponent(id)}`, {
+            method: "DELETE",
+        });
+
+        return datos;
+    }
+
+    // contadores calculados sobre todos los incidentes, sin filtros
+    async calcularResumen() {
+        const { datos: todos } = await this.peticion(this.urlApi);
 
         return {
             abiertos: todos.filter((i) => i.estado === "Abierto").length,
