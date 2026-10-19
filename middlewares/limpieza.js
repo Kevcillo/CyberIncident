@@ -6,6 +6,7 @@ const { DatosInvalidos } = require("../errors/errores");
 const SIN_LIMPIAR = ["contrasena"];
 
 // caracteres de control invisibles, se conservan el salto de línea y el tabulador
+// eslint-disable-next-line no-control-regex -- se buscan a propósito para eliminarlos
 const CONTROL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 const ETIQUETAS = /<[^>]*>?/g;
 

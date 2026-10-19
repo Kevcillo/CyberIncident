@@ -23,4 +23,18 @@ class DatosInvalidos extends ErrorApp {
     }
 }
 
-module.exports = { ErrorApp, NoEncontrado, DatosInvalidos };
+class NoAutorizado extends ErrorApp {
+    constructor(mensaje = "Debe iniciar sesión para continuar.") {
+        super(401, mensaje);
+        this.name = "NoAutorizado";
+    }
+}
+
+class SinPermiso extends ErrorApp {
+    constructor(mensaje = "No tiene permisos para realizar esta acción.") {
+        super(403, mensaje);
+        this.name = "SinPermiso";
+    }
+}
+
+module.exports = { ErrorApp, NoEncontrado, DatosInvalidos, NoAutorizado, SinPermiso };

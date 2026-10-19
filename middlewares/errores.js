@@ -23,7 +23,8 @@ function rutaNoEncontrada(req, res) {
     responder(res, 404, `La ruta ${req.method} ${req.originalUrl} no existe.`);
 }
 
-function manejadorErrores(err, req, res, next) {
+// express necesita los cuatro parámetros para reconocerlo como manejador de errores
+function manejadorErrores(err, req, res, _next) {
 
     if (err instanceof ErrorApp) {
         return responder(res, err.estado, err.message, err.errores);
@@ -32,6 +33,10 @@ function manejadorErrores(err, req, res, next) {
     // json mal escrito en el cuerpo de la petición
     if (err.type === "entity.parse.failed") {
         return responder(res, 400, "El cuerpo de la petición no es un JSON válido.");
+    }
+
+    if (err.type === "entity.too.large") {
+        return responder(res, 413, "La petición es demasiado grande. El máximo es 10 KB.");
     }
 
     if (err instanceof UniqueConstraintError) {
