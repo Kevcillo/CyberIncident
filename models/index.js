@@ -13,5 +13,6 @@ if (!config) {
 const sequelize = new Sequelize(config);
 
 const Incidente = require("./incidente")(sequelize);
+const Usuario = require("./usuario")(sequelize);
 
-module.exports = { sequelize, Incidente };
+module.exports = { sequelize, Incidente, Usuario };

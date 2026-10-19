@@ -1,10 +1,19 @@
 {
-  "name": "t1s3",
+  "name": "cyberincident-n3-prototipo",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Plataforma CyberIncident con API REST, Express y base de datos SQLite",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "setup": "node scripts/setup.js",
+    "migrate": "sequelize-cli db:migrate --config config/database.js --migrations-path migrations --seeders-path seeders --models-path models",
+    "migrate:undo": "sequelize-cli db:migrate:undo:all --config config/database.js --migrations-path migrations --seeders-path seeders --models-path models",
+    "seed": "sequelize-cli db:seed:all --config config/database.js --migrations-path migrations --seeders-path seeders --models-path models",
+    "test": "jest --runInBand",
+    "test:unitarias": "jest tests/unitarias --verbose",
+    "lint": "eslint .",
+    "medir": "node scripts/medir.js",
+    "empaquetar": "node scripts/empaquetar.js"
   },
   "repository": {
     "type": "git",
@@ -13,12 +22,38 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/Kevcillo/CyberIncident/issues"
   },
   "homepage": "https://github.com/Kevcillo/CyberIncident#readme",
+  "type": "commonjs",
   "dependencies": {
-    "express": "^5.2.1"
+    "bcryptjs": "^3.0.3",
+    "compression": "^1.8.2",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.5",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "sequelize": "^6.37.8",
+    "sequelize-cli": "^6.6.5",
+    "sqlite3": "^6.0.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@babel/preset-env": "^7.29.7",
+    "@eslint/js": "^9.39.5",
+    "archiver": "^7.0.1",
+    "eslint": "^9.39.5",
+    "globals": "^17.13.0",
+    "jest": "^30.5.2",
+    "supertest": "^7.3.1"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "globalSetup": "./tests/preparar.js",
+    "maxWorkers": 1
   }
 }

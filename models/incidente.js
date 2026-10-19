@@ -114,5 +114,8 @@ module.exports = (sequelize) => {
     Incidente.PRIORIDADES = PRIORIDADES;
     Incidente.ESTADOS = ESTADOS;
 
+    // columnas que muestra el listado, el detalle completo se pide aparte
+    Incidente.CAMPOS_LISTADO = ["id", "codigo", "titulo", "tipo", "prioridad", "estado", "fecha"];
+
     return Incidente;
 };

@@ -1,16 +1,25 @@
-/**
- * RUTAS (mapea metodo HTTP + URL -> funcion del controlador)
- */
+// rutas de la api de incidentes, todas exigen sesión
 
 const express = require("express");
-const controlador = require("../js/controllers/incidentesController");
+const controlador = require("../controllers/incidentesController");
+const permitirRoles = require("../middlewares/roles");
+const validarCuerpo = require("../middlewares/validacion");
 
 const router = express.Router();
 
-// GET /api/incidentes -> lista completa (JSON)
-router.get("/", controlador.listarIncidentes);
+const todos = permitirRoles("admin", "analista");
+const soloAdmin = permitirRoles("admin");
 
-// GET /api/incidentes/:id -> un incidente puntual (JSON)
-router.get("/:id", controlador.obtenerIncidente);
+const camposCrear = validarCuerpo(controlador.CAMPOS_CREAR);
+const camposEditar = validarCuerpo(controlador.CAMPOS_EDITAR);
+
+router.get("/", todos, controlador.listarIncidentes);
+router.get("/:id", todos, controlador.obtenerIncidente);
+router.post("/", todos, camposCrear, controlador.crearIncidente);
+router.put("/:id", todos, camposEditar, controlador.reemplazarIncidente);
+router.patch("/:id", todos, camposEditar, controlador.actualizarIncidente);
+
+// eliminar es la acción más delicada, queda solo para el administrador
+router.delete("/:id", soloAdmin, controlador.eliminarIncidente);
 
 module.exports = router;

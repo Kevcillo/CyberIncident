@@ -1,38 +1,29 @@
-// punto de entrada de la página, arma el modelo, la vista y el controlador
+// punto de entrada de la página, solo crea las piezas y las conecta
 
-import { Sesion } from "./sesion.js";
-import { IncidentModel } from "./model.js";
-import { IncidentView } from "./view.js";
-import { IncidentController } from "./controller.js";
+import { Sesion } from "./modelos/sesion.js";
+import { ModeloIncidentes } from "./modelos/incidentes.js";
+import { VistaSesion } from "./vistas/sesion.js";
+import { VistaIncidentes } from "./vistas/incidentes.js";
+import { activarMenu } from "./vistas/menu.js";
+import { ControladorSesion } from "./controladores/sesion.js";
+import { ControladorIncidentes } from "./controladores/incidentes.js";
 
 $(function () {
 
-    const $navegacion = $("nav");
-    const $botonMenu = $(".menu-toggle");
+    activarMenu();
 
-    $botonMenu.on("click", () => {
-        const menuAbierto = !$navegacion.hasClass("menu-abierto");
+    const sesion = new Sesion("/api/auth");
+    const modelo = new ModeloIncidentes("/api/incidentes", sesion);
 
-        $navegacion.toggleClass("menu-abierto", menuAbierto);
-        $botonMenu.attr("aria-expanded", menuAbierto);
+    const incidentes = new ControladorIncidentes(modelo, new VistaIncidentes(), sesion);
+
+    const controladorSesion = new ControladorSesion(sesion, new VistaSesion(), {
+        alEntrar: () => incidentes.cargarPanel(),
+        alSalir: () => incidentes.reiniciar(),
     });
 
-    $("nav a").on("click", () => {
-        $navegacion.removeClass("menu-abierto");
-        $botonMenu.attr("aria-expanded", "false");
-    });
+    // si el token vence en cualquier petición, se vuelve al inicio de sesión
+    modelo.alPerderSesion = (mensaje) => controladorSesion.salir(mensaje);
 
-    $navegacion.on("keydown", (evento) => {
-        if (evento.key === "Escape") {
-            $navegacion.removeClass("menu-abierto");
-            $botonMenu.attr("aria-expanded", "false");
-            $botonMenu.trigger("focus");
-        }
-    });
-
-    const modelo = new IncidentModel("./data/incidentes.json");
-    const vista = new IncidentView();
-    const controlador = new IncidentController(modelo, vista, sesion);
-
-    controlador.iniciar();
+    controladorSesion.iniciar();
 });

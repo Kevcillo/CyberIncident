@@ -7,6 +7,9 @@ const { execSync } = require("child_process");
 module.exports = async () => {
     process.env.NODE_ENV = "test";
 
+    // si las pruebas se ejecutan antes que el setup, se crea la configuración
+    require("../scripts/setup").asegurarConfiguracion();
+
     const { test } = require("../config/database");
 
     fs.rmSync(test.storage, { force: true });

@@ -1,20 +1,60 @@
 {
   "info": {
     "name": "CyberIncident API",
-    "description": "Peticiones de la API de incidentes. Ejecutar en orden con el servidor encendido. El incidente de prueba se crea y se elimina dentro de la colección.",
+    "description": "Peticiones de la API de incidentes con seguridad. Ejecutar en orden con el servidor encendido. Primero se inicia sesión y los tokens se guardan solos. El incidente de prueba se crea y se elimina dentro de la colección.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{tokenAdmin}}",
+        "type": "string"
+      }
+    ]
+  },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:3000" },
-    { "key": "idCreado", "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "tokenAdmin",
+      "value": ""
+    },
+    {
+      "key": "tokenAnalista",
+      "value": ""
+    },
+    {
+      "key": "idCreado",
+      "value": ""
+    }
   ],
   "item": [
     {
-      "name": "Casos correctos",
+      "name": "1 Inicio de sesión",
       "item": [
         {
-          "name": "01 Estado del servicio",
-          "request": { "method": "GET", "url": "{{baseUrl}}/api/estado" },
+          "name": "01 Login administrador",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"admin@cyberincident.com\",\n  \"contrasena\": \"Admin123!\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
           "event": [
             {
               "listen": "test",
@@ -22,15 +62,100 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('responde 200', () => pm.response.to.have.status(200));",
-                  "pm.test('el servicio está activo', () => pm.expect(pm.response.json().estado).to.eql('activo'));"
+                  "pm.test('entrega un token de admin', () => pm.expect(pm.response.json().datos.usuario.rol).to.eql('admin'));",
+                  "pm.collectionVariables.set('tokenAdmin', pm.response.json().datos.token);"
                 ]
               }
             }
           ]
         },
         {
-          "name": "02 Listar todos los incidentes",
-          "request": { "method": "GET", "url": "{{baseUrl}}/api/incidentes" },
+          "name": "02 Login analista",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"analista@cyberincident.com\",\n  \"contrasena\": \"Analista123!\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('entrega un token de analista', () => pm.expect(pm.response.json().datos.usuario.rol).to.eql('analista'));",
+                  "pm.collectionVariables.set('tokenAnalista', pm.response.json().datos.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Perfil del usuario conectado",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/perfil",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('no envía la contraseña', () => pm.expect(pm.response.text()).to.not.include('contrasena'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2 Casos correctos",
+      "item": [
+        {
+          "name": "04 Estado del servicio",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/estado",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 Listar incidentes",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/incidentes",
+            "header": []
+          },
           "event": [
             {
               "listen": "test",
@@ -45,8 +170,12 @@
           ]
         },
         {
-          "name": "03 Filtrar por estado y prioridad",
-          "request": { "method": "GET", "url": "{{baseUrl}}/api/incidentes?estado=Abierto&prioridad=Alta" },
+          "name": "06 Filtrar por estado y prioridad",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/incidentes?estado=Abierto&prioridad=Alta",
+            "header": []
+          },
           "event": [
             {
               "listen": "test",
@@ -54,27 +183,27 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('responde 200', () => pm.response.to.have.status(200));",
-                  "pm.test('todos cumplen el filtro', () => {",
-                  "    pm.response.json().datos.forEach((i) => {",
-                  "        pm.expect(i.estado).to.eql('Abierto');",
-                  "        pm.expect(i.prioridad).to.eql('Alta');",
-                  "    });",
-                  "});"
+                  "pm.test('todos cumplen el filtro', () => pm.response.json().datos.forEach((i) => { pm.expect(i.estado).to.eql('Abierto'); pm.expect(i.prioridad).to.eql('Alta'); }));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "04 Crear incidente",
+          "name": "07 Crear incidente",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/incidentes",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"titulo\": \"Ransomware en servidor\",\n  \"tipo\": \"Malware\",\n  \"prioridad\": \"Crítica\",\n  \"fecha\": \"2026-10-02\",\n  \"reportadoPor\": \"soporte@empresa.com\",\n  \"descripcion\": \"Archivos cifrados en el servidor de archivos principal.\"\n}"
-            },
-            "url": "{{baseUrl}}/api/incidentes"
+            }
           },
           "event": [
             {
@@ -91,28 +220,39 @@
           ]
         },
         {
-          "name": "05 Obtener el incidente creado",
-          "request": { "method": "GET", "url": "{{baseUrl}}/api/incidentes/{{idCreado}}" },
+          "name": "08 Obtener el incidente creado",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/incidentes/{{idCreado}}",
+            "header": []
+          },
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
-                  "pm.test('es el incidente creado', () => pm.expect(pm.response.json().datos.titulo).to.eql('Ransomware en servidor'));"
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "06 Actualizar estado del incidente",
+          "name": "09 Actualizar estado con PATCH",
           "request": {
-            "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"estado\": \"En investigación\"\n}" },
-            "url": "{{baseUrl}}/api/incidentes/{{idCreado}}"
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/incidentes/{{idCreado}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"En investigación\"\n}"
+            }
           },
           "event": [
             {
@@ -128,8 +268,41 @@
           ]
         },
         {
-          "name": "07 Eliminar el incidente creado",
-          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/incidentes/{{idCreado}}" },
+          "name": "10 Reemplazar completo con PUT",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/incidentes/{{idCreado}}",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Ransomware contenido\",\n  \"tipo\": \"Malware\",\n  \"prioridad\": \"Alta\",\n  \"estado\": \"Cerrado\",\n  \"fecha\": \"2026-10-02\",\n  \"responsable\": \"Equipo de Seguridad\",\n  \"descripcion\": \"El equipo afectado fue aislado y los archivos se restauraron desde respaldo.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('quedó cerrado', () => pm.expect(pm.response.json().datos.estado).to.eql('Cerrado'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "11 Eliminar como administrador",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/incidentes/{{idCreado}}",
+            "header": []
+          },
           "event": [
             {
               "listen": "test",
@@ -145,33 +318,135 @@
       ]
     },
     {
-      "name": "Casos de error",
+      "name": "3 Casos de error y seguridad",
       "item": [
         {
-          "name": "08 Obtener el incidente eliminado",
-          "request": { "method": "GET", "url": "{{baseUrl}}/api/incidentes/{{idCreado}}" },
+          "name": "12 Listar sin token",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/incidentes",
+            "header": [],
+            "auth": {
+              "type": "noauth"
+            }
+          },
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('responde 404', () => pm.response.to.have.status(404));"
+                  "pm.test('responde 401', () => pm.response.to.have.status(401));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "09 Crear con datos inválidos",
+          "name": "13 Listar con token inválido",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/incidentes",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "abc.def.ghi",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14 Login con contraseña incorrecta",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"admin@cyberincident.com\",\n  \"contrasena\": \"incorrecta\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "15 Eliminar como analista",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/incidentes/1",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAnalista}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 403', () => pm.response.to.have.status(403));",
+                  "pm.test('indica que se requiere admin', () => pm.expect(pm.response.json().mensaje).to.include('admin'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "16 Crear con datos inválidos",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/incidentes",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"titulo\": \"Ab\",\n  \"tipo\": \"Virus\",\n  \"prioridad\": \"Urgente\",\n  \"fecha\": \"2026-13-45\",\n  \"reportadoPor\": \"correo-malo\",\n  \"descripcion\": \"corta\"\n}"
-            },
-            "url": "{{baseUrl}}/api/incidentes"
+            }
           },
           "event": [
             {
@@ -180,42 +455,27 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('responde 400', () => pm.response.to.have.status(400));",
-                  "pm.test('indica el error de cada campo', () => {",
-                  "    const errores = pm.response.json().errores;",
-                  "    ['titulo', 'tipo', 'prioridad', 'fecha', 'reportadoPor', 'descripcion'].forEach((c) => pm.expect(errores).to.have.property(c));",
-                  "});"
+                  "pm.test('indica el error de cada campo', () => ['titulo', 'tipo', 'prioridad', 'fecha', 'reportadoPor', 'descripcion'].forEach((c) => pm.expect(pm.response.json().errores).to.have.property(c)));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "10 Crear con JSON mal escrito",
+          "name": "17 Crear con campos no permitidos",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{titulo: sin comillas" },
-            "url": "{{baseUrl}}/api/incidentes"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('responde 400', () => pm.response.to.have.status(400));"
-                ]
+            "url": "{{baseUrl}}/api/incidentes",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
               }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Ransomware en servidor\",\n  \"tipo\": \"Malware\",\n  \"prioridad\": [\n    \"Alta\"\n  ],\n  \"fecha\": \"2026-10-02\",\n  \"reportadoPor\": \"soporte@empresa.com\",\n  \"descripcion\": \"Archivos cifrados en el servidor de archivos principal.\",\n  \"rol\": \"admin\"\n}"
             }
-          ]
-        },
-        {
-          "name": "11 Actualizar con estado inválido",
-          "request": {
-            "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"estado\": \"Pendiente\"\n}" },
-            "url": "{{baseUrl}}/api/incidentes/1"
           },
           "event": [
             {
@@ -224,15 +484,28 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('responde 400', () => pm.response.to.have.status(400));",
-                  "pm.test('indica el error del estado', () => pm.expect(pm.response.json().errores).to.have.property('estado'));"
+                  "pm.test('rechaza rol y el tipo de prioridad', () => { const e = pm.response.json().errores; pm.expect(e.rol).to.eql('Campo no permitido.'); pm.expect(e.prioridad).to.eql('Debe ser un texto.'); });"
                 ]
               }
             }
           ]
         },
         {
-          "name": "12 Filtro con valor no permitido",
-          "request": { "method": "GET", "url": "{{baseUrl}}/api/incidentes?estado=Perdido" },
+          "name": "18 Crear con JSON mal escrito",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/incidentes",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{titulo: sin comillas"
+            }
+          },
           "event": [
             {
               "listen": "test",
@@ -246,8 +519,21 @@
           ]
         },
         {
-          "name": "13 Id que no es número",
-          "request": { "method": "GET", "url": "{{baseUrl}}/api/incidentes/abc" },
+          "name": "19 PUT incompleto",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/incidentes/1",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"Cerrado\"\n}"
+            }
+          },
           "event": [
             {
               "listen": "test",
@@ -261,8 +547,50 @@
           ]
         },
         {
-          "name": "14 Eliminar un id inexistente",
-          "request": { "method": "DELETE", "url": "{{baseUrl}}/api/incidentes/999" },
+          "name": "20 Filtro no permitido",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/incidentes?estado=Perdido",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "21 Id que no es número",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/incidentes/abc",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "22 Obtener el incidente eliminado",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/incidentes/{{idCreado}}",
+            "header": []
+          },
           "event": [
             {
               "listen": "test",
@@ -276,8 +604,39 @@
           ]
         },
         {
-          "name": "15 Ruta inexistente",
-          "request": { "method": "GET", "url": "{{baseUrl}}/api/no-existe" },
+          "name": "23 Origen no permitido por CORS",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/estado",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "http://sitio-malicioso.com"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "24 Ruta inexistente",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/no-existe",
+            "header": []
+          },
           "event": [
             {
               "listen": "test",

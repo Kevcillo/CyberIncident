@@ -112,6 +112,11 @@ header > div:last-child {
     text-align: right;
 }
 
+header > div:last-child > p {
+    font-weight: 600;
+    letter-spacing: 0.025em;
+}
+
 
 /* NAVEGACIÓN */
 
@@ -540,6 +545,7 @@ aside {
 aside h2 {
     margin-bottom: 10px;
     color: #172554;
+    letter-spacing: 0.025em;
 }
 
 aside h3 {
