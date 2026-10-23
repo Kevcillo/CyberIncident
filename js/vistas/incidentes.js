@@ -194,7 +194,7 @@ export class VistaIncidentes {
             $tarjeta.append(`<p><strong>Fecha:</strong> ${escaparHtml(incidente.fecha)}</p>`);
 
             const $boton = $(
-                `<button type="button" class="btn btn-primary" data-incidente="${escaparHtml(incidente.id)}"
+                `<button type="button" data-incidente="${escaparHtml(incidente.id)}"
                     aria-label="Ver detalle de ${escaparHtml(nombre(incidente))}">
                     Ver detalle
                 </button>`

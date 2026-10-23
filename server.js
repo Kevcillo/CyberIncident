@@ -12,7 +12,7 @@ async function iniciar() {
     let app;
 
     try {
-        // si nunca se ejecutó npm run setup, el proyecto se prepara solo
+        
         if (faltaPreparar()) {
             console.log("Primera ejecución: preparando el proyecto...");
             preparar();
@@ -23,7 +23,7 @@ async function iniciar() {
 
         await sequelize.authenticate();
 
-        // la base existe pero sin tablas, también se prepara sola
+        
         if ((await tablasFaltantes(sequelize)).length > 0) {
             console.log("Faltan tablas en la base de datos: preparando el proyecto...");
             preparar();

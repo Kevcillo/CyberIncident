@@ -11,7 +11,7 @@ export class VistaSesion {
         this.$acceso = $("#acceso");
         this.$formulario = $("#form-acceso");
         this.$mensaje = $("#mensaje-acceso");
-        this.$panel = $("main, nav");
+        this.$panel = $("#inicio, nav");
         this.$usuario = $("#usuario-sesion");
     }
 

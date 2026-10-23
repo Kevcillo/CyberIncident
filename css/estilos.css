@@ -1,3 +1,102 @@
+/* base de la página, antes la aportaba bootstrap */
+
+[hidden] {
+    display: none !important;
+}
+
+h1,
+h2,
+h3,
+h4 {
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+h2 {
+    font-size: calc(1.325rem + 0.9vw);
+}
+
+h3 {
+    font-size: calc(1.3rem + 0.6vw);
+}
+
+h4 {
+    font-size: calc(1.275rem + 0.3vw);
+}
+
+label {
+    display: inline-block;
+}
+
+input,
+button,
+select,
+textarea {
+    margin: 0;
+}
+
+button:not(:disabled) {
+    cursor: pointer;
+}
+
+fieldset {
+    min-width: 0;
+    margin: 0;
+}
+
+legend {
+    float: left;
+    width: 100%;
+    padding: 0;
+    margin-bottom: 0.5rem;
+    font-size: calc(1.275rem + 0.3vw);
+    line-height: inherit;
+}
+
+legend + * {
+    clear: left;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+thead,
+tbody,
+tr,
+th,
+td {
+    border-style: solid;
+    border-width: 0;
+}
+
+::-webkit-datetime-edit-fields-wrapper,
+::-webkit-datetime-edit-text,
+::-webkit-datetime-edit-minute,
+::-webkit-datetime-edit-hour-field,
+::-webkit-datetime-edit-day-field,
+::-webkit-datetime-edit-month-field,
+::-webkit-datetime-edit-year-field {
+    padding: 0;
+}
+
+/* en pantallas grandes los títulos dejan de crecer */
+@media (min-width: 1200px) {
+    h2 {
+        font-size: 2rem;
+    }
+
+    h3 {
+        font-size: 1.75rem;
+    }
+
+    h4,
+    legend {
+        font-size: 1.5rem;
+    }
+}
+
 /* ACCESIBILIDAD: TEXTO SOLO PARA LECTORES DE PANTALLA */
 
 .sr-only {
@@ -217,6 +316,8 @@ nav a:focus {
 
 #incidentes article button {
     margin-top: 12px;
+    line-height: 1.5;
+    vertical-align: middle;
     padding: 10px 16px;
 
     background-color: #172554;
@@ -535,6 +636,7 @@ nav a:focus {
 
 aside {
     margin: 0 40px 40px;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     padding: 24px;
 
     background-color: #e0e7ff;
@@ -618,6 +720,15 @@ footer p:last-child {
     max-width: 520px;
     margin: 40px auto;
     padding: 0 20px;
+}
+
+.imagen-acceso {
+    display: block;
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 24px;
 }
 
 #acceso > p {
