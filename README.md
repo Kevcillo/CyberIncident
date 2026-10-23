@@ -51,6 +51,14 @@ Mejoras aplicadas:
 - El listado trae solo las columnas que muestra; el detalle completo se pide aparte.
 - Las respuestas del servidor viajan comprimidas.
 - El navegador guarda las imágenes durante 7 días.
+- La foto del login se sirve en formato WebP y al tamaño en que se muestra: pasó de 7.883 KB a 28 KB.
+- Se quitó Bootstrap, que casi no se usaba, y jQuery ya no frena el dibujo de la página.
+
+Lighthouse califica el login con 100 en rendimiento, accesibilidad, buenas prácticas y buscadores.
+
+## Registro de defectos
+
+Los defectos encontrados con DevTools y Lighthouse, su causa en el código y su corrección están en el archivo docs/defectos.md
 
 ## Cómo probar con Postman
 
@@ -77,13 +85,17 @@ El servidor usa la misma idea con las carpetas models, controllers y routes, má
 - Las contraseñas se guardan cifradas y nunca se envían en las respuestas.
 - Los textos se limpian de código HTML y se rechazan los campos no permitidos.
 - Solo los sitios indicados en CORS_ORIGENES pueden usar la API desde un navegador.
-- jQuery y Bootstrap se cargan con firma de integridad, así el navegador rechaza cualquier versión alterada.
+- jQuery se carga con firma de integridad, así el navegador rechaza cualquier versión alterada.
 
 ## HTTPS
 
 En desarrollo la plataforma usa http://localhost:3000, porque el tráfico no sale de la computadora.
 Al publicarla en internet debe usar HTTPS, para que las contraseñas y los tokens viajen cifrados.
 Los pasos para activarlo están en el archivo docs/HTTPS.md
+
+## Créditos
+
+La fotografía del login es de Unsplash y se usa bajo su licencia libre.
 
 ## comandos
 

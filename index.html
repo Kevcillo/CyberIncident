@@ -6,17 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>CyberIncident - Gestión de Incidentes</title>
+    <meta name="description" content="Plataforma para registrar, consultar y dar seguimiento a incidentes de ciberseguridad, con acceso por roles.">
 
     <!-- ícono de la pestaña -->
     <link rel="icon" type="image/svg+xml" href="img/icono.svg">
-    <!-- estilos base de bootstrap -->
-    <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-    integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
-    crossorigin="anonymous"
-    >
 
+    <!-- estilos de la página -->
     <link rel="stylesheet" href="css/estilos.css">
 
 </head>
@@ -69,8 +64,26 @@
     </nav>
 
 
-    <!-- inicio de sesión -->
-    <section id="acceso" aria-labelledby="titulo-acceso">
+    <!-- inicio de sesión, es la región principal mientras no hay sesión -->
+    <main id="acceso" aria-labelledby="titulo-acceso">
+
+        <!-- imagen de la portada, el navegador elige el tamaño y el formato más liviano que soporte -->
+        <picture>
+            <source
+                type="image/webp"
+                srcset="img/login-480.webp 480w, img/login-960.webp 960w"
+                sizes="(max-width: 520px) calc(100vw - 40px), 480px"
+            >
+            <img
+                class="imagen-acceso"
+                src="img/login-960.jpg"
+                width="960"
+                height="360"
+                fetchpriority="high"
+                decoding="async"
+                alt="Placa de circuitos iluminada en tonos azules"
+            >
+        </picture>
 
         <h2 id="titulo-acceso">Iniciar sesión</h2>
 
@@ -126,7 +139,7 @@
             </table>
         </details>
 
-    </section>
+    </main>
 
 
     <!-- contenido, visible solo con sesión -->
@@ -445,7 +458,7 @@
 
 
         <!-- información -->
-        <aside class="shadow-sm" aria-labelledby="titulo-informacion">
+        <aside aria-labelledby="titulo-informacion">
 
             <h2 id="titulo-informacion"
             >Información del sistema</h2>
@@ -484,8 +497,9 @@
 
     </footer>
 
-    <!-- jquery, la firma impide que se cargue si alguien lo altera -->
+    <!-- jquery, la firma impide que se cargue si alguien lo altera y defer evita que frene el dibujo de la página -->
     <script
+        defer
         src="https://code.jquery.com/jquery-3.7.1.min.js"
         integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
         crossorigin="anonymous"
