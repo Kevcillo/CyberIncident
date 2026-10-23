@@ -1,10 +1,36 @@
-// vista de los incidentes: resumen, listado, detalle y formulario
+// vista de los incidentes: resumen, listado con detalle desplegable y formulario
 
 import { escaparHtml, anunciar, marcarCampoInvalido, marcarCampoValido } from "./comun.js";
+import { renderSeveridades, renderAbiertos, renderMeses } from "./graficos.js";
+import { icono } from "./iconos.js";
+
+const CLASE_SEVERIDAD = { Crítica: "critica", Alta: "alta", Media: "media", Baja: "baja" };
 
 // título con su código, por ejemplo INC-001 - Correo sospechoso
 function nombre(incidente) {
     return `${incidente.codigo} - ${incidente.titulo}`;
+}
+
+// botón que amplía o recoge la tarjeta, la flecha indica hacia dónde se mueve
+function botonDetalle(incidente, ampliada) {
+    const id = escaparHtml(incidente.id);
+    const titulo = escaparHtml(nombre(incidente));
+    const texto = ampliada ? "Ocultar detalle" : "Ver detalle";
+
+    return `
+        <button type="button" class="boton-detalle" data-incidente="${id}"
+            data-codigo="${escaparHtml(incidente.codigo)}" data-titulo="${escaparHtml(incidente.titulo)}"
+            aria-expanded="${ampliada}" aria-controls="detalle-${id}" aria-label="${texto} de ${titulo}">
+            ${texto}${icono(ampliada ? "arriba" : "abajo")}
+        </button>`;
+}
+
+function recogerTarjeta($tarjeta) {
+    const $boton = $tarjeta.find("button[data-incidente]");
+    const incidente = { id: $tarjeta.data("id"), codigo: $boton.data("codigo"), titulo: $boton.data("titulo") };
+
+    $tarjeta.removeClass("ampliada").find(".detalle-ampliado").remove();
+    $boton.replaceWith(botonDetalle(incidente, false));
 }
 
 // en la api el correo se llama reportadoPor, en el formulario correo
@@ -17,7 +43,6 @@ export class VistaIncidentes {
         this.$mensajeRegistro = $("#mensaje-registro");
         this.$listaIncidentes = $("#lista-incidentes");
         this.$totalFiltrado = $("#total-filtrado");
-        this.$detalleContenido = $("#detalle-contenido");
 
         this.$formulario = $("#form-incidente");
         this.$filtros = $("#form-filtros");
@@ -42,20 +67,27 @@ export class VistaIncidentes {
         this.$filtros.on("submit", (evento) => evento.preventDefault());
     }
 
+    // si la tarjeta ya está ampliada se recoge sin pedir nada al servidor
     alVerDetalle(accion) {
-        this.$listaIncidentes.on("click", "button[data-incidente]", (evento) =>
-            accion($(evento.currentTarget).data("incidente"))
-        );
+        this.$listaIncidentes.on("click", "button[data-incidente]", (evento) => {
+            const $tarjeta = $(evento.currentTarget).closest("article");
+
+            if ($tarjeta.hasClass("ampliada")) {
+                this.recoger($tarjeta);
+            } else {
+                accion($(evento.currentTarget).data("incidente"));
+            }
+        });
     }
 
     alEditar(accion) {
-        this.$detalleContenido.on("click", "button[data-editar]", (evento) =>
+        this.$listaIncidentes.on("click", "button[data-editar]", (evento) =>
             accion($(evento.currentTarget).data("editar"))
         );
     }
 
     alEliminar(accion) {
-        this.$detalleContenido.on("click", "button[data-eliminar]", (evento) =>
+        this.$listaIncidentes.on("click", "button[data-eliminar]", (evento) =>
             accion($(evento.currentTarget).data("eliminar"))
         );
     }
@@ -171,6 +203,10 @@ export class VistaIncidentes {
         this.$contadorInvestigacion.text(resumen.investigacion);
         this.$contadorCriticos.text(resumen.criticos);
         this.$contadorCerrados.text(resumen.cerrados);
+
+        renderSeveridades(resumen.severidades);
+        renderAbiertos(resumen.listaAbiertos);
+        renderMeses(resumen.meses);
     }
 
     renderLista(incidentes) {
@@ -185,32 +221,49 @@ export class VistaIncidentes {
 
         incidentes.forEach((incidente) => {
 
-            const $tarjeta = $("<article></article>");
+            const titulo = escaparHtml(nombre(incidente));
 
-            $tarjeta.append(`<h3>${escaparHtml(nombre(incidente))}</h3>`);
-            $tarjeta.append(`<p><strong>Tipo:</strong> ${escaparHtml(incidente.tipo)}</p>`);
-            $tarjeta.append(`<p><strong>Prioridad:</strong> ${escaparHtml(incidente.prioridad)}</p>`);
-            $tarjeta.append(`<p><strong>Estado:</strong> ${escaparHtml(incidente.estado)}</p>`);
-            $tarjeta.append(`<p><strong>Fecha:</strong> ${escaparHtml(incidente.fecha)}</p>`);
-
-            const $boton = $(
-                `<button type="button" data-incidente="${escaparHtml(incidente.id)}"
-                    aria-label="Ver detalle de ${escaparHtml(nombre(incidente))}">
-                    Ver detalle
-                </button>`
-            );
-
-            $tarjeta.append($boton);
-
-            this.$listaIncidentes.append($tarjeta);
+            // a la izquierda el título, la fecha y el botón; a la derecha tipo, prioridad y estado
+            this.$listaIncidentes.append(`
+                <article data-id="${escaparHtml(incidente.id)}">
+                    <div class="principal">
+                        <h3 title="${titulo}">${titulo}</h3>
+                        <p><strong>Fecha:</strong> ${escaparHtml(incidente.fecha)}</p>
+                        ${botonDetalle(incidente, false)}
+                    </div>
+                    <dl class="atributos">
+                        <div class="tipo">
+                            ${icono(incidente.tipo)}
+                            <dt>Tipo</dt>
+                            <dd>${escaparHtml(incidente.tipo)}</dd>
+                        </div>
+                        <div class="${CLASE_SEVERIDAD[incidente.prioridad] || ""}">
+                            ${icono("prioridad")}
+                            <dt>Prioridad</dt>
+                            <dd>${escaparHtml(incidente.prioridad)}</dd>
+                        </div>
+                        <div class="estado-${incidente.estado === "Cerrado" ? "cerrado" : "activo"}">
+                            ${icono(incidente.estado)}
+                            <dt>Estado</dt>
+                            <dd>${escaparHtml(incidente.estado)}</dd>
+                        </div>
+                    </dl>
+                </article>
+            `);
         });
 
         this.$listaIncidentes.attr("aria-busy", "false");
     }
 
-    // detalle, los botones dependen del rol y eliminar solo aparece para el administrador
-
+    // amplía la tarjeta con todos los datos; editar siempre, eliminar solo el administrador
     renderDetalle(incidente, puedeEliminar) {
+        this.limpiarDetalle();
+
+        const $tarjeta = this.$listaIncidentes.find(`article[data-id="${incidente.id}"]`);
+
+        if ($tarjeta.length === 0) {
+            return;
+        }
 
         const id = escaparHtml(incidente.id);
         const etiqueta = escaparHtml(nombre(incidente));
@@ -219,27 +272,34 @@ export class VistaIncidentes {
             ? `<button type="button" class="peligro" data-eliminar="${id}" aria-label="Eliminar ${etiqueta}">Eliminar</button>`
             : `<p class="nota-permiso">Solo el administrador puede eliminar incidentes.</p>`;
 
-        this.$detalleContenido.html(`
-            <h3>${escaparHtml(nombre(incidente))}</h3>
-            <p><strong>Tipo:</strong> ${escaparHtml(incidente.tipo)}</p>
-            <p><strong>Prioridad:</strong> ${escaparHtml(incidente.prioridad)}</p>
-            <p><strong>Estado:</strong> ${escaparHtml(incidente.estado)}</p>
-            <p><strong>Fecha del incidente:</strong> ${escaparHtml(incidente.fecha)}</p>
-            <p><strong>Reportado por:</strong> ${escaparHtml(incidente.reportadoPor)}</p>
-            <p><strong>Responsable:</strong> ${escaparHtml(incidente.responsable)}</p>
-            <h4>Descripción</h4>
-            <p>${escaparHtml(incidente.descripcion)}</p>
-            <div class="acciones-detalle">
-                <button type="button" data-editar="${id}" aria-label="Editar ${etiqueta}">Editar</button>
-                ${botonEliminar}
+        $tarjeta.addClass("ampliada").append(`
+            <div class="detalle-ampliado" id="detalle-${id}">
+                <dl>
+                    <div><dt>Reportado por</dt><dd>${escaparHtml(incidente.reportadoPor)}</dd></div>
+                    <div><dt>Responsable</dt><dd>${escaparHtml(incidente.responsable)}</dd></div>
+                </dl>
+                <h4>Descripción</h4>
+                <p>${escaparHtml(incidente.descripcion)}</p>
+                <div class="acciones-detalle">
+                    <button type="button" data-editar="${id}" aria-label="Editar ${etiqueta}">Editar</button>
+                    ${botonEliminar}
+                </div>
             </div>
         `);
 
-        document.querySelector("#detalle").scrollIntoView({ behavior: "smooth" });
+        $tarjeta.find("button[data-incidente]").replaceWith(botonDetalle(incidente, true));
+        $tarjeta[0].scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
 
+    // vuelve la tarjeta a su tamaño normal y deja el foco en su botón
+    recoger($tarjeta) {
+        recogerTarjeta($tarjeta);
+        $tarjeta.find("button[data-incidente]").trigger("focus");
+    }
+
+    // recoge cualquier tarjeta ampliada
     limpiarDetalle() {
-        this.$detalleContenido.html("<p>Seleccione un incidente del listado para ver su detalle.</p>");
+        this.$listaIncidentes.find("article.ampliada").each((_, tarjeta) => recogerTarjeta($(tarjeta)));
     }
 
     // formulario

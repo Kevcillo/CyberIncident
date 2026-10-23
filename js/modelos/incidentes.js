@@ -1,5 +1,7 @@
 // modelo del navegador, se comunica con la api usando fetch y el token de la sesión
 
+import { contarPorSeveridad, listarAbiertos, contarPorMes } from "./indicadores.js";
+
 export class ModeloIncidentes {
 
     constructor(urlApi, sesion) {
@@ -96,14 +98,24 @@ export class ModeloIncidentes {
     // el resumen se guarda y solo se pide de nuevo cuando los datos cambian
     async obtenerResumen({ listaCompleta = null, actualizar = false } = {}) {
         if (listaCompleta) {
-            this.resumen = calcularResumen(listaCompleta);
+            this.resumen = resumir(listaCompleta);
         } else if (actualizar || !this.resumen) {
             const { datos } = await this.peticion(this.urlApi);
-            this.resumen = calcularResumen(datos);
+            this.resumen = resumir(datos);
         }
 
         return this.resumen;
     }
+}
+
+// contadores y gráficos del panel salen de la misma lista completa
+export function resumir(incidentes) {
+    return {
+        ...calcularResumen(incidentes),
+        severidades: contarPorSeveridad(incidentes),
+        listaAbiertos: listarAbiertos(incidentes),
+        meses: contarPorMes(incidentes),
+    };
 }
 
 // contadores del resumen a partir de una lista, no hace peticiones

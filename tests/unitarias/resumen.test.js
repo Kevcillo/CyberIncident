@@ -1,6 +1,6 @@
 // regla de negocio de la página: los contadores del resumen
 
-import { calcularResumen } from "../../js/modelos/incidentes.js";
+import { calcularResumen, resumir } from "../../js/modelos/incidentes.js";
 
 const incidente = (estado, prioridad) => ({ estado, prioridad });
 
@@ -35,5 +35,12 @@ describe("resumen del panel", () => {
         const resumen = calcularResumen([incidente("Archivado", "Baja")]);
 
         expect(resumen.abiertos + resumen.investigacion + resumen.cerrados).toBe(0);
+    });
+
+    test("el resumen completo mantiene el contador de abiertos junto a la lista", () => {
+        const resumen = resumir([incidente("Abierto", "Alta"), incidente("Abierto", "Media"), incidente("Cerrado", "Baja")]);
+
+        expect(resumen.abiertos).toBe(2);
+        expect(resumen.listaAbiertos).toHaveLength(2);
     });
 });

@@ -5,12 +5,14 @@ import { ModeloIncidentes } from "./modelos/incidentes.js";
 import { VistaSesion } from "./vistas/sesion.js";
 import { VistaIncidentes } from "./vistas/incidentes.js";
 import { activarMenu } from "./vistas/menu.js";
+import { activarFondo } from "./vistas/fondo.js";
 import { ControladorSesion } from "./controladores/sesion.js";
 import { ControladorIncidentes } from "./controladores/incidentes.js";
 
 $(function () {
 
     activarMenu();
+    activarFondo();
 
     const sesion = new Sesion("/api/auth");
     const modelo = new ModeloIncidentes("/api/incidentes", sesion);

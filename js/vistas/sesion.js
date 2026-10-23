@@ -25,7 +25,7 @@ export class VistaSesion {
     }
 
     alCerrarSesion(accion) {
-        $("#boton-salir").on("click", accion);
+        $("#boton-salir, #boton-salir-menu").on("click", accion);
     }
 
     // lectura de la página
