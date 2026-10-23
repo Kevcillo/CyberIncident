@@ -43,7 +43,7 @@ module.exports = [
 
     // archivos cuyo trabajo es escribir mensajes en la terminal
     {
-        files: ["server.js", "scripts/**/*.js", "middlewares/registro.js"],
+        files: ["scripts/**/*.js", "config/bitacora.js"],
         rules: { "no-console": "off" },
     },
 

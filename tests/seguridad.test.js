@@ -246,3 +246,14 @@ describe("cors", () => {
         expect(res.headers["access-control-allow-origin"]).toBe("http://localhost:3000");
     });
 });
+
+describe("bitácora", () => {
+
+    test("cada respuesta lleva un identificador distinto", async () => {
+        const primera = await request(app).get("/api/estado");
+        const segunda = await request(app).get("/api/estado");
+
+        expect(primera.headers["x-request-id"]).toMatch(/^[0-9a-f-]{36}$/);
+        expect(primera.headers["x-request-id"]).not.toBe(segunda.headers["x-request-id"]);
+    });
+});

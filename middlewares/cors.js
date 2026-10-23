@@ -13,9 +13,10 @@ const lista = (process.env.CORS_ORIGENES || "")
     .map((origen) => origen.trim())
     .filter(Boolean);
 
-// la propia página del proyecto siempre está permitida
+// en local la página del proyecto siempre está permitida, en producción solo la lista
 const propio = `http://localhost:${process.env.PORT || 3000}`;
-const permitidos = [...new Set([propio, ...lista])];
+const enProduccion = process.env.NODE_ENV === "production";
+const permitidos = [...new Set(enProduccion ? lista : [propio, ...lista])];
 
 module.exports = cors({
     origin(origen, responder) {

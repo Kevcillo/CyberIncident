@@ -155,11 +155,26 @@ describe("casos correctos", () => {
         expect(await Incidente.count()).toBe(3);
     });
 
-    test("responde el estado del servicio", async () => {
+    test("responde el estado del servicio con la base conectada", async () => {
         const res = await api().get("/api/estado");
 
         expect(res.status).toBe(200);
         expect(res.body.estado).toBe("activo");
+        expect(res.body.version).toBe(require("../package.json").version);
+        expect(res.body.baseDeDatos).toMatchObject({ estado: "conectada", motor: "sqlite" });
+        expect(res.headers["cache-control"]).toBe("no-store");
+    });
+
+    test("sin base de datos el estado responde 503 sin detalles internos", async () => {
+        const caida = jest.spyOn(sequelize, "authenticate").mockRejectedValue(new Error("SQLITE_CANTOPEN ruta secreta"));
+
+        const res = await api().get("/api/estado");
+        caida.mockRestore();
+
+        expect(res.status).toBe(503);
+        expect(res.body.estado).toBe("sin servicio");
+        expect(res.body.baseDeDatos.estado).toBe("sin conexión");
+        expect(JSON.stringify(res.body)).not.toContain("ruta secreta");
     });
 });
 

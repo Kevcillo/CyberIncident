@@ -15,6 +15,8 @@ const valoresPorDefecto = [
     "PORT=3000",
     "DB_STORAGE=database/cyberincident.sqlite",
     "DB_STORAGE_TEST=database/test.sqlite",
+    "DATABASE_URL=",
+    "DB_SSL=false",
     "JWT_SECRET=",
     "JWT_EXPIRA=2h",
     "CORS_ORIGENES=http://localhost:3000,http://127.0.0.1:3000",
@@ -88,7 +90,12 @@ function faltaPreparar() {
     const base = contenido.match(/^DB_STORAGE=(.*)$/m);
 
     const sinClave = !clave || clave[1].trim().length < 32;
-    const sinBase = !base || !fs.existsSync(path.resolve(raiz, base[1].trim()));
+
+    // con postgresql no hay archivo que revisar, las tablas las revisa el servidor
+    const usaPostgres = process.env.DATABASE_URL || /^DATABASE_URL=\S+/m.test(contenido);
+    const sinBase = usaPostgres
+        ? false
+        : !base || !fs.existsSync(path.resolve(raiz, base[1].trim()));
 
     return sinClave || sinBase;
 }
@@ -100,9 +107,8 @@ function asegurarConfiguracion() {
     asegurarOrigenes();
 }
 
-function preparar() {
-    asegurarConfiguracion();
-
+// aplica migraciones y datos iniciales pendientes, sin repetir los ya aplicados
+function migrarBase() {
     console.log("Creando las tablas...");
     ejecutar("npm run migrate");
 
@@ -110,7 +116,12 @@ function preparar() {
     ejecutar("npm run seed");
 }
 
-module.exports = { preparar, faltaPreparar, asegurarConfiguracion };
+function preparar() {
+    asegurarConfiguracion();
+    migrarBase();
+}
+
+module.exports = { preparar, migrarBase, faltaPreparar, asegurarConfiguracion };
 
 // ejecutado directamente con npm run setup
 if (require.main === module) {

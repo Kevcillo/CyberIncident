@@ -122,4 +122,4 @@ La fotografía del login es de Unsplash y se usa bajo su licencia libre.
 | PUT | /api/incidentes/:id | Reemplaza el incidente completo | admin y analista |
 | PATCH | /api/incidentes/:id | Cambia solo los campos enviados | admin y analista |
 | DELETE | /api/incidentes/:id | Elimina un incidente | Solo admin |
-| GET | /api/estado | Indica si el servicio está activo | Cualquiera |
+| GET | /api/estado | Health check: revisa el servidor y la base de datos, responde 200 o 503 | Cualquiera |

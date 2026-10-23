@@ -8,6 +8,12 @@ const {
 } = require("sequelize");
 
 const { ErrorApp } = require("../errors/errores");
+const bitacora = require("../config/bitacora");
+
+// el detalle técnico queda en la bitácora, al usuario solo le llega un mensaje general
+function anotarFallo(err, req) {
+    bitacora.error(err.message, { id: req.id, tipo: err.name, pila: err.stack });
+}
 
 function responder(res, estado, mensaje, errores) {
     const cuerpo = { exito: false, mensaje };
@@ -57,16 +63,16 @@ function manejadorErrores(err, req, res, _next) {
     }
 
     if (err instanceof ConnectionError) {
-        console.error(err);
+        anotarFallo(err, req);
         return responder(res, 503, "No hay conexión con la base de datos.");
     }
 
     if (err instanceof DatabaseError) {
-        console.error(err);
+        anotarFallo(err, req);
         return responder(res, 500, "Ocurrió un error en la base de datos.");
     }
 
-    console.error(err);
+    anotarFallo(err, req);
 
     responder(res, 500, "Ocurrió un error interno en el servidor.");
 }

@@ -10,7 +10,8 @@ if (!config) {
     throw new Error(`El entorno ${entorno} no está configurado en config/database.js`);
 }
 
-const sequelize = new Sequelize(config);
+// postgresql se conecta con una dirección, sqlite con la ruta de su archivo
+const sequelize = config.url ? new Sequelize(config.url, config) : new Sequelize(config);
 
 const Incidente = require("./incidente")(sequelize);
 const Usuario = require("./usuario")(sequelize);

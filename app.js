@@ -11,13 +11,12 @@ const controlCors = require("./middlewares/cors");
 const { rutaNoEncontrada, manejadorErrores } = require("./middlewares/errores");
 const rutasIncidentes = require("./routes/incidentes");
 const rutasAuth = require("./routes/auth");
+const { estado } = require("./controllers/estadoController");
 
 const app = express();
 
-// en las pruebas no se llena la consola
-if (process.env.NODE_ENV !== "test") {
-    app.use(registro);
-}
+// cada petición recibe un identificador y queda en la bitácora
+app.use(registro);
 
 // comprime las respuestas para que pesen menos en la red
 app.use(compression());
@@ -42,13 +41,8 @@ app.get("/", (req, res) => {
 app.use("/api/auth", rutasAuth);
 app.use("/api/incidentes", autenticacion, rutasIncidentes);
 
-app.get("/api/estado", (req, res) => {
-    res.status(200).json({
-        servicio: "CyberIncident API",
-        estado: "activo",
-        fecha: new Date().toISOString(),
-    });
-});
+// health check, también lo consulta el proveedor del despliegue
+app.get("/api/estado", estado);
 
 app.use(rutaNoEncontrada);
 app.use(manejadorErrores);
